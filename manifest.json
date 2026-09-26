@@ -1,0 +1,17 @@
+{
+  "name": "楊梅天成急診護理排班",
+  "short_name": "楊梅急診班表",
+  "description": "楊梅天成醫院急診護理師班表（看板檢視／自動排班）",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1a3f7a",
+  "theme_color": "#1a3f7a",
+  "lang": "zh-TW",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
