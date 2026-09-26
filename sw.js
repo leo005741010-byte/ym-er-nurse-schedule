@@ -1,5 +1,5 @@
 // 楊梅天成急診護理排班 Service Worker
-const CACHE='ym-er-nurse-shift-v1';
+const CACHE='ym-er-nurse-shift-v2';
 const CORE=['./','./index.html','./manifest.json',
             './icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png'];
 

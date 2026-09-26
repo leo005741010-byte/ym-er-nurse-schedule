@@ -469,7 +469,7 @@ body.board-mode #bd-monthbar{display:flex;}
           </select>
         </div>
         <div class="split-control" data-pwa-hide>
-          <label title="N-OFF-D不可出現；D/E每班資淺最多2位、N最多1位、不可全是男生；支援規則：D→E、E→D/N、N→E(上月D轉N者於本月第一個N班前可先上D)；休假天數落在4個相鄰數字，資深&gt;大夜&gt;資淺；休假最多者必為資深、上最多班者必為資淺；不可OFF-上1天班-OFF">最多連上：</label>
+          <label title="N-OFF-D不可出現；D/E每班資淺最多2位、N最多1位、不可全是男生；支援方向不限；小夜/大夜本班滿15班才支援；一個月最多2種班別、跳班最多4次；休假天數落在4個相鄰數字，資深&gt;大夜&gt;資淺；不可OFF-上1天班-OFF">最多連上：</label>
           D<input type="number" id="max-consec-D" min="1" max="6" style="width:40px" onchange="pushUndo();state.maxConsecByShift.D=Math.min(6,parseInt(this.value)||5);autoSave();">
           E<input type="number" id="max-consec-E" min="1" max="6" style="width:40px" onchange="pushUndo();state.maxConsecByShift.E=Math.min(6,parseInt(this.value)||5);autoSave();">
           N<input type="number" id="max-consec-N" min="1" max="6" style="width:40px" onchange="pushUndo();state.maxConsecByShift.N=Math.min(6,parseInt(this.value)||4);autoSave();">
@@ -665,7 +665,7 @@ body.board-mode #bd-monthbar{display:flex;}
   <div id="tab-help" class="tab-pane">
     <div class="help-wrap">
       <h2 class="help-h2">📖 操作說明書</h2>
-      <p class="help-lead">楊梅天成急診護理師排班。排班引擎沿用中壢天晟急診護理排班(支援規則、休假公平、資深多休…)，但<b>沒有位置(組長/檢傷…)需求</b>，每班只看人數，另外加上楊梅的兩條班內組成規則：<b style="color:#c0392b">D、E 每班最多 2 位資淺、N 最多 1 位；同一班不能全是男生</b>。資料自動存在這台電腦的瀏覽器；要多台裝置共用請到「☁️ 雲端設定」開啟同步。</p>
+      <p class="help-lead">楊梅天成急診護理師排班。排班引擎沿用中壢天晟急診護理排班(休假公平、資深多休、不排孤立單班…)，但<b>沒有位置(組長/檢傷…)需求</b>、<b>支援方向不限</b>(只要不排出 N-OFF-D)，小夜/大夜本班滿 15 班才支援、一個月最多 2 種班別、跳班最多 4 次；另外加上楊梅的班內組成規則：<b style="color:#c0392b">D、E 每班最多 2 位資淺、N 最多 1 位；同一班不能全是男生</b>。資料自動存在這台電腦的瀏覽器；要多台裝置共用請到「☁️ 雲端設定」開啟同步。</p>
 
       <h3 class="help-h3">🗂 一、月班總表</h3>
       <ul class="help-ul">
@@ -742,10 +742,11 @@ body.board-mode #bd-monthbar{display:flex;}
       <h3 class="help-h3">⚖ 八、自動排班原則（鐵則）</h3>
       <ol class="help-ol">
         <li><b>不留空班</b>：每個班別的需求人數一定補滿；本班別補不到時，依支援規則拉其他班別的人來支援。</li>
-        <li><b>支援方向限制</b>：D只能支援E；E可支援D與N；N只能支援E（N不能貼D的洞）。<b>換月轉班作息銜接（兩種互為鏡像）</b>：①上月大夜、本月轉白班者，本月一開始還在夜間作息，可先上大夜，直到上到本月第一個白班為止；②上月白班、本月轉大夜者，本月一開始還在日間作息，可先上白班，直到上到本月第一個大夜為止。</li>
+        <li><b>支援方向不限（楊梅）</b>：D／E／N 之間都可以互相支援，但<b style="color:#c0392b">絕不排出 N-OFF-D</b>（大夜後休一天接白班，包含「排了大夜之後兩天已有白班」的情形），且兩班之間至少休息「最少休息時數」（預設16小時，所以大夜隔天不會接白班或小夜、小夜隔天不會接白班）。</li>
+        <li><b style="color:#c0392b">小夜／大夜包班：本班先上滿 15 班才去支援</b>：本班是 E 或 N 的同仁（有包班津貼），當月本班未滿 15 班就不會被排去支援別的班；支援優先找白班同仁。月班總表「小／大」欄滿 15 會綠底。白班與兼職不受此限。</li>
         <li><b>不出現孤立單班</b>：不會排成「休－上班－休」的單獨一天上班（月底最後兩天因下月尚未排，屬正常）。若上個月底是「休假－上班」（倒數第2天休、最後一天上班），本月第1天不會排休假，以免上月最後一天變成孤立單班。</li>
-        <li><b>一個月最多2種班別</b>：同一人整月不會被排到日（D）／小夜（E）／大夜（N）三種都有，最多只出現其中兩種，減少日夜作息負擔。（唯有在補不到人、否則會空班時，才會為了「不留空班」這條更高優先的鐵則而破例。）</li>
-        <li><b>轉班次數 ≤ 4 次</b>：轉班定義為「相鄰兩個有上班的日子只要班別不同就算一次」（不限 D↔N，任何換班別都算；中間隔幾天休假不影響）。整月轉班次數控制在 4 次以內，避免作息一直被打亂。（同樣在會造成空班時才會破例。）</li>
+        <li><b style="color:#c0392b">不要三種班都上到</b>：同一人整月最多只出現 D／E／N 其中兩種。（唯有在補不到人、否則會空班時才會破例，並在排班結果列出是誰。）</li>
+        <li><b style="color:#c0392b">一個月跳班最多 4 次</b>：跳班＝「相鄰兩個有上班的日子班別不同」算一次（例如 E E N N E 算 2 次；中間隔休假不影響）。排回本班造成的跳班也算。（同樣只有在會空班時才破例並列出。）</li>
         <li><b>放假天數集中</b>：全體放假天數落差控制在 4 個相鄰數字內（班數全距 ≤ 3）。</li>
         <li><b>尊重預假／預班</b>：預假（OFF）與預班（指定上班）一定照辦，且預班會鎖定不被更動。</li>
         <li><b style="color:#c0392b">資淺人數上限：D、E 每班最多 2 位資淺，N 最多 1 位</b>：每班保留資深格（D/E 各2格、N 1格），只有資深能上；整月每一步調整都遵守。真的找不到資深可上的那幾班（例如資深都預假），會<b>先由資淺頂上、人數不短缺</b>，並在排班結果、月曆 ⚠ 與月班總表 ❗ 明確標出「資淺超過上限」，請手動處理。</li>
@@ -1753,6 +1754,12 @@ function nooffConflictsIfOff(nurseId,dateStr,sched){
 }
 // 鐵則：大夜(N)後休一天、緊接著上白班(D)絕對禁止(N-OFF-D)，即使休息時數已足夠。
 function violatesNOffD(nurseId,date,shift,sched){
+  if(shift==='N'){
+    // 往後看：今天上N、明天休、後天已經排了D → 一樣是 N-OFF-D。
+    // (楊梅支援方向不限，白班的人也會去支援大夜，這個方向變得很常見，一定要擋。)
+    const f1=addDays(date,1), f2=addDays(date,2);
+    return (((sched[f2]||{}).D)||[]).includes(nurseId)&&!isAssignedThatDay(nurseId,f1,sched);
+  }
   if(shift!=='D') return false;
   const d1=addDays(date,-1), d2=addDays(date,-2);
   const wasNOnD2=((sched[d2]||{})['N']||[]).includes(nurseId);
@@ -1770,7 +1777,11 @@ function violatesNOffD(nurseId,date,shift,sched){
 //       直到上到本月第一個大夜(N)為止；之後就不再回頭上 D。
 // (預上班 WORK_D/N 由管理者明確指定並以 _workLocks 鎖定，不經過這些資格判斷，
 // 屬人工override，不受此限。)
+// 楊梅天成：支援方向沒有限制(D/E/N 互相都可支援)，只要不排出 N-OFF-D、休息時數足夠即可
+// (那兩條由 violatesNOffD／restOK 另外把關)。中壢的支援矩陣與換月轉班例外保留在下方但不再啟用。
+const YM_FREE_SUPPORT=true;
 function supportShiftBlocked(nurseId,date,shift,sched){
+  if(YM_FREE_SUPPORT) return false;
   const home=getNurseShiftTypeAtDate(nurseId,date);
   if(home===shift) return false;
   if(home==='D'&&shift==='N'){
@@ -1883,6 +1894,7 @@ function wouldExceedTransitions(nurseId,dateStr,shift,sched){
 // D 班，會形成「上過N又回頭上D」。平衡階段以亂序指派，光靠支援檢查擋不住這種
 // 「N 排在既有 D 之前」的情形，故指派 N 時一併檢查。
 function violatesDtoNOrder(nurseId,date,shift,sched){
+  if(YM_FREE_SUPPORT) return false; // 楊梅支援方向不限，換月轉班的順序限制也不需要
   if(shift!=='N') return false;
   if(!isDtoNTransition(nurseId,date)) return false;
   return hasDOnOrAfterInMonth(nurseId,date,sched);
@@ -1890,6 +1902,7 @@ function violatesDtoNOrder(nurseId,date,shift,sched){
 // N轉D順序鐵則的反向防護(例外甲的鏡像)：N轉D者若這天要排 D、而本月更晚的日期已存在他
 // 先前排入的 N 班，會形成「上過D又回頭上N」。故指派 D 時一併檢查。
 function violatesNtoDOrder(nurseId,date,shift,sched){
+  if(YM_FREE_SUPPORT) return false;
   if(shift!=='D') return false;
   if(!isNtoDTransition(nurseId,date)) return false;
   return hasNOnOrAfterInMonth(nurseId,date,sched);
@@ -1971,6 +1984,44 @@ function longLeaveBlocksMore(nurseId,date,sched){
   if(target===null) return false;
   return monthWorkDayCount(nurseId,y,m,sched)>=target;
 }
+// ===== 楊梅：小夜／大夜包班津貼 =====
+// 本班是 E 或 N 的人，當月本班要先上滿 15 班，才可以去支援別的班(否則領不到包班津貼)。
+// 白班沒有包班津貼，不受此限；兼職不適用。
+const PACK_MIN=15;
+function packRuleApplies(nurseId,y,m){
+  const doc=state.doctors.find(d=>d.id===nurseId);
+  if(!doc||doc.type!=='full'||(doc.prefs&&doc.prefs.partTime)) return false;
+  const h=getNurseShiftType(nurseId,y,m);
+  return h==='E'||h==='N';
+}
+function homeSupportCounts(nurseId,y,m,sched){
+  const h=getNurseShiftType(nurseId,y,m);
+  let home=0,sup=0;
+  for(const d of monthDatesRO(y,m)){
+    const ds=sched[d]; if(!ds) continue;
+    for(const sh of SHIFTS){ if((ds[sh]||[]).includes(nurseId)){ if(sh===h) home++; else sup++; break; } }
+  }
+  return {home,sup};
+}
+// 違反量：有去支援、但本班未滿15班 → 差幾班(最多等於支援班數)
+function packShortOf(nurseId,y,m,sched){
+  if(!packRuleApplies(nurseId,y,m)) return 0;
+  const {home,sup}=homeSupportCounts(nurseId,y,m,sched);
+  return (sup>0&&home<PACK_MIN)?Math.min(sup,PACK_MIN-home):0;
+}
+// 排班中可支援的額度：預期總班數−15，再保留1班緩衝(之後的休假平衡可能再拿走她1班本班)
+function supportAllowance(nurseId,date){
+  const{y,m}=ymFromDate(date);
+  const tgt=longLeaveWorkTarget(nurseId,y,m);
+  const exp=tgt!==null?tgt:Math.floor(((_eqTargets&&_eqTargets.deAvg)||20)*leaveAvailRatio(nurseId,date));
+  return Math.max(0,exp-PACK_MIN-1);
+}
+function packBlocksSupport(nurseId,date,shift,sched){
+  const{y,m}=ymFromDate(date);
+  if(!packRuleApplies(nurseId,y,m)) return false;
+  if(getNurseShiftType(nurseId,y,m)===shift) return false;
+  return homeSupportCounts(nurseId,y,m,sched).sup+1>supportAllowance(nurseId,date);
+}
 function canWork(nurseId, date, shift, role, sched){
   const doc=state.doctors.find(d=>d.id===nurseId);
   if(!doc||doc.type!=='full') return false;
@@ -1986,6 +2037,7 @@ function canWork(nurseId, date, shift, role, sched){
   if(violatesDtoNOrder(nurseId,date,shift,sched)) return false;
   if(violatesNtoDOrder(nurseId,date,shift,sched)) return false;
   if(!_bypassShiftVariety && longLeaveBlocksMore(nurseId,date,sched)) return false; // 指定休假天數為強制，已達工作日上限不得再排(僅保底補空班時放行，不留空班仍最優先)
+  if(!_bypassShiftVariety && wouldExceedTransitions(nurseId,date,shift,sched)) return false; // 楊梅：跳班最多4次(排回本班也可能造成一次跳班)
   if(rolePrefBlocksRole(nurseId,date,role)) return false; // 位置優先為強制：只能排在指定位置，不可例外
   return true;
 }
@@ -2033,6 +2085,7 @@ function canWorkSupport(nurseId, date, shift, role, sched){
   // 原則：一個月轉班(換班別)次數不超過4次。支援跨班別是轉班的來源，故在此把關
   // (同樣在保底補空班階段放行)。
   if(!_bypassShiftVariety && wouldExceedTransitions(nurseId,date,shift,sched)) return false;
+  if(!_bypassShiftVariety && packBlocksSupport(nurseId,date,shift,sched)) return false; // 楊梅：小夜/大夜本班未滿15班不去支援
   if(!_bypassShiftVariety && longLeaveBlocksMore(nurseId,date,sched)) return false; // 指定休假天數為強制，已達工作日上限不得再排(僅保底補空班時放行，不留空班仍最優先)
   if(rolePrefBlocksRole(nurseId,date,role)) return false; // 位置優先為強制：只能排在指定位置，不可例外
   return true;
@@ -2103,7 +2156,12 @@ function scoreNurse(nurseId, date, shift, role, sched){
   score+=(avg-myCnt)*6;
   // 跨班別支援(如D/E人員上N班)預設扣分，優先保留給本班別人員，
   // 僅在本班別人員已達目標、評分算式仍偏好支援時才會勝出。
-  if(getNurseShiftTypeAtDate(nurseId,date)!==shift) score-=8;
+  if(getNurseShiftTypeAtDate(nurseId,date)!==shift){
+    score-=8;
+    // 楊梅：小夜/大夜要顧包班(本班滿15)，支援優先找白班的人
+    const hm=getNurseShiftTypeAtDate(nurseId,date);
+    if(hm==='E'||hm==='N') score-=20;
+  }
   if(isHoliday(date)){
     const myHol=calcNurseHolCount(nurseId,sched);
     const avgHol=avgHolCount(sched)*leaveAvailRatio(nurseId,date);
@@ -2508,6 +2566,7 @@ function canTakeSwap(nurseId,d,sh,role,sched,strict){
   if(strict!==false){
     if(wouldExceed2ShiftTypes(nurseId,d,sh,sched)) return false;
     if(wouldExceedTransitions(nurseId,d,sh,sched)) return false;
+    if(packBlocksSupport(nurseId,d,sh,sched)) return false;
   }
   if(!restOK(nurseId,d,sh,sched)) return false;
   if(violatesNOffD(nurseId,d,sh,sched)) return false;
@@ -2600,6 +2659,136 @@ function fillSeniorSlotsLastResort(newSched, fullSched, dates){
         finally{ roles[i]='資深'; }
       }
     }
+  }
+}
+// ===== 楊梅：包班不足修正(小夜/大夜本班未滿15卻有支援班) =====
+// 都是「班數不變」的交換，不影響休假公平：
+//   (1) 同一天：她的支援班 ↔ 當天上她本班的某人 對調；
+//   (2) 兩天交換：她的支援班給當天休假的人 Z，Z 另一天的「她本班」讓給她(優先找本班就是那個支援班別的人，一換兩人都受惠)。
+// 任何一步若讓對方變成包班不足、全男生、孤立單班，或違反休息/N-OFF-D/連班，就還原。
+function _isoCount(ids,dates,sched){ let n=0; for(const id of ids) for(const d of dates) if(isIsolatedWorkDay(id,d,sched)) n++; return n; }
+function packFixOne(newSched,fullSched,dates,X,H,y,m){
+  const sup=[];
+  for(const d of dates){ const ds=newSched[d]; for(const sh of SHIFTS){ const i=(ds[sh]||[]).indexOf(X); if(i>=0&&sh!==H&&!isWorkLocked(d,sh,i)) sup.push({d,sh,i}); } }
+  const allD=monthDates(y,m);
+  for(const {d,sh,i} of shuffle(sup)){
+    const ds=newSched[d];
+    // (1) 同一天對調
+    const arrH=ds[H]||[];
+    for(let j=0;j<arrH.length;j++){
+      const Y=arrH[j]; if(!Y||isWorkLocked(d,H,j)) continue;
+      const yShortBefore=packShortOf(Y,y,m,newSched);
+      if(!trySwapWithinDay(newSched,fullSched,d,sh,i,H,j,true)) continue;
+      if(shiftAllMale(ds,sh)||shiftAllMale(ds,H)||packShortOf(Y,y,m,newSched)>yShortBefore){
+        ds[sh][i]=X; ds[H][j]=Y; continue; // 還原
+      }
+      return true;
+    }
+    // (2) 兩天交換
+    const roleI=ds.roles[sh][i];
+    const cands=state.doctors.filter(z=>z.type==='full'&&z.id!==X&&!isAssignedThatDay(z.id,d,newSched))
+      .sort((a,b)=>(getNurseShiftType(b.id,y,m)===sh)-(getNurseShiftType(a.id,y,m)===sh));
+    for(const z of cands){
+      const Z=z.id;
+      for(const d2 of dates){
+        if(d2===d||isAssignedThatDay(X,d2,newSched)) continue;
+        const arr2=newSched[d2][H]||[]; const k=arr2.indexOf(Z);
+        if(k<0||isWorkLocked(d2,H,k)) continue;
+        const roleK=newSched[d2].roles[H][k];
+        const zShortBefore=packShortOf(Z,y,m,newSched);
+        const isoBefore=_isoCount([X,Z],allD,fullSched);
+        // 先把兩個人從原格子拿掉，再逐一檢查能否放進新格子
+        arr2[k]=null; ds[sh][i]=null;
+        let ok=canWork(Z,d,sh,roleI,fullSched)||canWorkForce(Z,d,sh,roleI,fullSched)||canWorkSupport(Z,d,sh,roleI,fullSched);
+        if(ok){ ds[sh][i]=Z; ok=canWork(X,d2,H,roleK,fullSched)||canWorkForce(X,d2,H,roleK,fullSched); }
+        if(ok){ arr2[k]=X;
+          ok=!shiftAllMale(ds,sh)&&!shiftAllMale(newSched[d2],H)
+            &&packShortOf(Z,y,m,newSched)<=zShortBefore
+            &&_isoCount([X,Z],allD,fullSched)<=isoBefore
+            &&monthTransitionCount(X,d,newSched)<=MAX_TRANSITIONS
+            &&monthTransitionCount(Z,d,newSched)<=MAX_TRANSITIONS
+            &&shiftTypesInMonth(Z,d,newSched).size<=2;
+        }
+        if(ok) return true;
+        ds[sh][i]=X; arr2[k]=Z; // 還原
+      }
+    }
+  }
+  return false;
+}
+// ===== 楊梅：N-OFF-D 最後防線 =====
+// 排班過程中「把中間那天的班挪走」也可能把 N-上班-D 變成 N-OFF-D(指派當下檢查不到)，最後全月再掃一次。
+// 修法都維持班數不變：(a) 後天那班 D 跟當天上 E/N 的人對調；(b) 當天的 N 跟當天上 D/E 的人對調；
+// (c) 都不行才把後天的 D 讓給當天休假的人(班數會差一班，但 N-OFF-D 是鐵則)。
+function listNOffD(sched,dates){
+  const out=[];
+  for(const doc of state.doctors){
+    if(doc.type!=='full') continue;
+    for(const d of dates){
+      if(!(((sched[d]||{}).N)||[]).includes(doc.id)) continue;
+      if(violatesNOffD(doc.id,d,'N',sched)) out.push({id:doc.id,d,d2:addDays(d,2)});
+    }
+  }
+  return out;
+}
+function repairNOffD(newSched, fullSched, dates){
+  const y=state.year, m=state.month;
+  const inMonth=new Set(dates);
+  for(let round=0;round<3;round++){
+    const list=listNOffD(fullSched,dates);
+    if(!list.length) return;
+    for(const v of list){
+      if(!violatesNOffD(v.id,v.d,'N',fullSched)) continue; // 前面修別人時已順帶解掉
+      let fixed=false;
+      const tryDay=(day,fromSh,toShs)=>{
+        if(!inMonth.has(day)) return false;
+        const ds=newSched[day]; const i=(ds[fromSh]||[]).indexOf(v.id);
+        if(i<0||isWorkLocked(day,fromSh,i)) return false;
+        for(const strict of [true,false]) for(const sh2 of toShs){
+          const arr2=ds[sh2]||[];
+          for(let j=0;j<arr2.length;j++){
+            const Y=arr2[j]; if(!Y||isWorkLocked(day,sh2,j)) continue;
+            const yBefore=packShortOf(Y,y,m,newSched), xBefore=packShortOf(v.id,y,m,newSched);
+            if(!trySwapWithinDay(newSched,fullSched,day,fromSh,i,sh2,j,strict)) continue;
+            const ok=!shiftAllMale(ds,fromSh)&&!shiftAllMale(ds,sh2)&&!shiftJuniorOver(ds,fromSh)&&!shiftJuniorOver(ds,sh2)
+              &&packShortOf(Y,y,m,newSched)<=yBefore&&packShortOf(v.id,y,m,newSched)<=xBefore
+              &&!listNOffD(fullSched,[addDays(day,-2),addDays(day,-1),day,addDays(day,1),addDays(day,2)].filter(x=>inMonth.has(x))).length;
+            if(ok) return true;
+            ds[fromSh][i]=v.id; ds[sh2][j]=Y; // 還原
+          }
+        }
+        return false;
+      };
+      fixed=tryDay(v.d2,'D',['E','N'])||tryDay(v.d,'N',['E','D']);
+      if(!fixed&&inMonth.has(v.d2)){
+        // (c) 後天的 D 讓給當天休假的人
+        const ds=newSched[v.d2]; const i=(ds.D||[]).indexOf(v.id);
+        if(i>=0&&!isWorkLocked(v.d2,'D',i)){
+          const role=ds.roles.D[i];
+          ds.D[i]=null;
+          const cands=state.doctors.filter(z=>z.type==='full'&&z.id!==v.id&&!isAssignedThatDay(z.id,v.d2,newSched)
+            &&(canWork(z.id,v.d2,'D',role,fullSched)||canWorkForce(z.id,v.d2,'D',role,fullSched)||canWorkSupport(z.id,v.d2,'D',role,fullSched)));
+          const ok=cands.map(z=>({id:z.id,sc:scoreNurse(z.id,v.d2,'D',role,newSched)})).sort((a,b)=>b.sc-a.sc)
+            .find(c=>{ ds.D[i]=c.id; if(!shiftAllMale(ds,'D')&&!shiftJuniorOver(ds,'D')) return true; ds.D[i]=null; return false; });
+          if(!ok) ds.D[i]=v.id;
+        }
+      }
+    }
+  }
+}
+function enforcePackMin(newSched, fullSched, dates){
+  const y=state.year, m=state.month;
+  for(let round=0;round<3;round++){
+    let changed=false;
+    for(const doc of state.doctors){
+      if(!packRuleApplies(doc.id,y,m)) continue;
+      const H=getNurseShiftType(doc.id,y,m);
+      for(let g=0;g<12&&packShortOf(doc.id,y,m,newSched)>0;g++){
+        if(!packFixOne(newSched,fullSched,dates,doc.id,H,y,m)) break;
+        changed=true;
+      }
+    }
+    if(!changed) break;
   }
 }
 function fixGenderDiversity(newSched, fullSched, dates){
@@ -4004,6 +4193,8 @@ function generateScheduleAttempt(y,m,dates){
   _bypassShiftVariety=true;
   try{ fillSeniorSlotsLastResort(newSched, fullSched, dates); }finally{ _bypassShiftVariety=false; }
   fixGenderDiversity(newSched, fullSched, dates); // 頂上的資淺若讓那班變全男生，再修一次
+  enforcePackMin(newSched, fullSched, dates);       // 楊梅：小夜/大夜本班未滿15卻去支援 → 用班數不變的交換修正
+  repairNOffD(newSched, fullSched, dates);          // 楊梅：N-OFF-D 鐵則最後防線(含「中間那天被挪走」造成的)
 
   // 鐵則保底：確認每筆預上班都在班(理論上鎖定機制已保證，此為最後防線)。
   enforceWorkPreRequests(newSched, dates);
@@ -4049,6 +4240,9 @@ function listWorkPrereqMiss(newSched,y,m){
 function scheduleQuality(newSched,y,m){
   const empty=countEmpty(newSched);
   const mix=countMixViolations(newSched,monthDates(y,m));
+  let packShort=0;
+  for(const doc of state.doctors) packShort+=packShortOf(doc.id,y,m,newSched);
+  const nOffD=listNOffD(new Proxy(newSched,{get(t,k){ return (typeof k==='string'&&!(k in t))?state.schedule[k]:t[k]; }}),monthDates(y,m)).length;
   const workPrereqMiss=countWorkPrereqMiss(newSched,y,m);
   const parts=state.doctors.filter(d=>d.type==='full'&&isFullMonthParticipant(d.id,y,m));
   const counts=parts.map(d=>calcNurseShiftCount(d.id,newSched));
@@ -4159,16 +4353,21 @@ function scheduleQuality(newSched,y,m){
   }
   // 位置連貫度(最低優先的加分項)：位置跳動次數，越少代表每個人越固定在同一個位置。
   const roleJumps=countRoleJumps(newSched,y,m);
-  return {empty,allMale:mix.allMale,juniorOver:mix.juniorOver,seniorSlotEmpty:mix.seniorSlotEmpty,workPrereqMiss,longLeaveMiss,pairViolations,isolated,threeShiftTypes,transitionExcess,seniorityViolations,maxOffNotSenior,maxShiftNotJunior,seniorityInversions,spread,prefMiss,roleJumps};
+  return {empty,nOffD,packShort,allMale:mix.allMale,juniorOver:mix.juniorOver,seniorSlotEmpty:mix.seniorSlotEmpty,workPrereqMiss,longLeaveMiss,pairViolations,isolated,threeShiftTypes,transitionExcess,seniorityViolations,maxOffNotSenior,maxShiftNotJunior,seniorityInversions,spread,prefMiss,roleJumps};
 }
 function isQualityBetter(q,best){
   if(!best) return true;
   if(q.empty!==best.empty) return q.empty<best.empty;
+  if((q.nOffD||0)!==(best.nOffD||0)) return (q.nOffD||0)<(best.nOffD||0); // 楊梅：N-OFF-D 是鐵則
   // 預班(WORK_D/E/N)未達成數：與空班同級或僅次之的最高優先序。
   if(q.workPrereqMiss!==best.workPrereqMiss) return q.workPrereqMiss<best.workPrereqMiss;
   // 楊梅：班內組成兩條硬規則——資淺超過上限的班數、全是男生的班數(人數足額優先，所以排在空班之後)
   if((q.juniorOver||0)!==(best.juniorOver||0)) return (q.juniorOver||0)<(best.juniorOver||0);
   if((q.allMale||0)!==(best.allMale||0)) return (q.allMale||0)<(best.allMale||0);
+  // 楊梅：包班(小夜/大夜本班滿15才支援)、一個月最多2種班別、跳班最多4次——使用者明訂的規則，排在班內組成之後
+  if((q.packShort||0)!==(best.packShort||0)) return (q.packShort||0)<(best.packShort||0);
+  if(q.threeShiftTypes!==best.threeShiftTypes) return q.threeShiftTypes<best.threeShiftTypes;
+  if(q.transitionExcess!==best.transitionExcess) return q.transitionExcess<best.transitionExcess;
   if(q.longLeaveMiss!==best.longLeaveMiss) return q.longLeaveMiss<best.longLeaveMiss;
   // 強制配對限制違反天數(僅次於空班與指定休假天數)
   if(q.pairViolations!==best.pairViolations) return q.pairViolations<best.pairViolations;
@@ -4257,7 +4456,7 @@ async function autoSchedule(){
   for(let attempt=0; attempt<AUTO_SCHEDULE_ATTEMPTS; attempt++){
     if(showProg){
       ptext.textContent=`排班計算中… 第 ${attempt+1}/${AUTO_SCHEDULE_ATTEMPTS} 次嘗試`;
-      psub.textContent=bestQ?`目前最佳：空班${bestQ.empty}、資淺超額${bestQ.juniorOver}、全男生${bestQ.allMale}、孤立${bestQ.isolated}、班數全距${bestQ.spread}`:'';
+      psub.textContent=bestQ?`目前最佳：空班${bestQ.empty}、資淺超額${bestQ.juniorOver}、包班不足${bestQ.packShort}、全男生${bestQ.allMale}、孤立${bestQ.isolated}、班數全距${bestQ.spread}`:'';
       await yieldPaint(); // 讓遮罩與進度文字先畫出來
     }
     const cand=generateScheduleAttempt(y,m,dates);
@@ -4266,7 +4465,7 @@ async function autoSchedule(){
     usedAttempts=attempt+1;
     // 達到理想(零空班、長假天數精準命中、無孤立單班、最少班者為資深、最多班者為資淺、
     // 班數全距<=1)即提早停止
-    if(bestQ.empty===0&&bestQ.juniorOver===0&&bestQ.allMale===0&&bestQ.workPrereqMiss===0&&bestQ.longLeaveMiss===0&&bestQ.pairViolations===0&&bestQ.isolated===0&&bestQ.threeShiftTypes===0&&bestQ.transitionExcess===0&&bestQ.seniorityViolations===0&&bestQ.seniorityInversions===0&&bestQ.spread<=1) break;
+    if(bestQ.empty===0&&bestQ.nOffD===0&&bestQ.packShort===0&&bestQ.juniorOver===0&&bestQ.allMale===0&&bestQ.workPrereqMiss===0&&bestQ.longLeaveMiss===0&&bestQ.pairViolations===0&&bestQ.isolated===0&&bestQ.threeShiftTypes===0&&bestQ.transitionExcess===0&&bestQ.seniorityViolations===0&&bestQ.seniorityInversions===0&&bestQ.spread<=1) break;
   }
   if(showProg){ overlay.classList.remove('show'); }
 
@@ -4284,6 +4483,20 @@ async function autoSchedule(){
   if(bestQ.juniorOver>0){
     const lst=listMixViolations(best,dates).filter(x=>x.includes('資淺'));
     msgs.push(`❌ <b>${bestQ.juniorOver} 班資淺超過上限</b>：${lst.slice(0,8).join('、')}${lst.length>8?' 等':''}。那幾班當天找不到足夠的資深人員(受預假/休息時數/連班上限/支援規則限制)，為了人數不短缺先由資淺頂上，請手動調整(月曆日期有 ⚠，月班總表該格有 ❗)。`);
+  }
+  if(bestQ.nOffD>0){
+    const lst=listNOffD(state.schedule,dates).map(v=>`${getDocName(v.id)} ${v.d.slice(5)}N→${v.d2.slice(5)}D`);
+    msgs.push(`❌ <b>出現 ${bestQ.nOffD} 處 N-OFF-D</b>：${lst.join('、')}。請手動調整。`);
+  }
+  if(bestQ.packShort>0){
+    const lst=state.doctors.filter(d=>packShortOf(d.id,y,m,best)>0).map(d=>{ const c=homeSupportCounts(d.id,y,m,best); return `${d.name}(本班${c.home}、支援${c.sup})`; });
+    msgs.push(`❌ <b>小夜/大夜包班未滿15班卻有支援</b>：${lst.join('、')}。通常是預假多或人力不足，請手動把支援班換給白班同仁。`);
+  }
+  if(bestQ.threeShiftTypes>0||bestQ.transitionExcess>0){
+    const parts=state.doctors.filter(d=>d.type==='full');
+    const t3=parts.filter(d=>shiftTypesInMonth(d.id,dates[0],best).size>=3).map(d=>d.name);
+    const tx=parts.map(d=>({d,n:monthTransitionCount(d.id,dates[0],best)})).filter(o=>o.n>MAX_TRANSITIONS).map(o=>`${o.d.name}(${o.n}次)`);
+    msgs.push(`⚠ <b>班別種類／跳班次數超過上限</b>：${t3.length?`三種班都上到：${t3.join('、')}；`:''}${tx.length?`跳班超過${MAX_TRANSITIONS}次：${tx.join('、')}；`:''}為了不留空班才破例，請手動調整。`);
   }
   if(bestQ.allMale>0){
     const lst=listMixViolations(best,dates).filter(x=>x.includes('男生'));
@@ -4303,7 +4516,7 @@ async function autoSchedule(){
       +attemptsNote+`詳細未達成日期請看「📈 統計報表」。</span>`,'warn');
     showToast(`排班完成，有 ${msgs.length} 項提醒(詳見上方紅色訊息)。點此關閉。`,'warn',true);
   } else {
-    setSchedResult(`✅ <b>自動排班完成，已全數排滿</b>，每班資淺人數都在上限內、沒有全男生的班，且孤立單班/配對限制/資深資淺/班數全距皆符合。${attemptsNote}</span>`,'ok');
+    setSchedResult(`✅ <b>自動排班完成，已全數排滿</b>，每班資淺人數都在上限內、沒有全男生的班、小夜大夜本班都滿15才支援、沒有人三種班都上、跳班都在${MAX_TRANSITIONS}次內，且孤立單班/配對限制/資深資淺/班數全距皆符合。${attemptsNote}</span>`,'ok');
     showToast('✅ 自動排班完成，已全數排滿！','ok');
   }
 }
@@ -5587,7 +5800,9 @@ function renderStats(){
     // 個人偏好「大夜可連到6天」者以其個人上限判斷，避免合法的6天連班被誤報
     { const ncS=maxConsecOf(doc.prefs||{}); if(ncS) capForDoc=Math.min(ncS,6); } // 個人設定為嚴格上限
     if(s.consecMax>capForDoc) viols.push(`⚠ ${doc.name} 連班超過上限(${s.consecMax}天 > ${capForDoc}天)`);
-    if(s.transitions>MAX_TRANSITIONS) viols.push(`⚠ ${doc.name} 轉班次數${s.transitions}次，超過上限（${MAX_TRANSITIONS}次以內）`);
+    if(s.transitions>MAX_TRANSITIONS) viols.push(`⚠ ${doc.name} 跳班(轉班)${s.transitions}次，超過上限（${MAX_TRANSITIONS}次以內）`);
+    if([s.D,s.E,s.N].filter(Boolean).length>=3) viols.push(`⚠ ${doc.name} 本月 D／E／N 三種班都上到（D${s.D}、E${s.E}、N${s.N}）`);
+    if(packShortOf(doc.id,_statsYear,_statsMonth,state.schedule)>0){ const c=homeSupportCounts(doc.id,_statsYear,_statsMonth,state.schedule); viols.push(`❌ ${doc.name} 本班(${homeShiftStat})只上${c.home}班、未滿${PACK_MIN}班卻支援了${c.sup}班（包班津貼）`); }
   }
   let empties=0, understaffed=0;
   for(const d of dates){
