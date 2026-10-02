@@ -725,7 +725,7 @@ body.board-mode #bd-monthbar{display:flex;}
         <li><b>💾 備份／📂 還原備份</b>：備份會把目前所有資料（班表／護理師／預假／設定／鎖定狀態）存成一個 JSON 檔；還原備份可從先前的備份檔完整回復（會覆蓋目前資料）。<b>建議每次大幅調整前先按備份保平安</b>，也可用來把資料搬到另一台電腦，或從舊版「急診護理排班」把資料整批搬過來。</li>
         <li><b>📋 匯出班表</b>：輸出成<b>楊梅原本的班表格式</b>（序號／姓名／1～31日／休假／E／N 天數，第2列「X月份、月休N天」），色彩照單位慣例：綠底＝假日欄、<span style="background:#f00;color:#fff;padding:0 3px">紅底</span>＝假日輪休的OFF、<span style="background:#ff0;padding:0 3px">黃底</span>＝預假、<span style="background:#fc0;padding:0 3px">深黃</span>＝護理師的 H（配合院方行程）。未到職／離職的日子印「／」。</li>
         <li><b>其他匯出</b>：CSV、Excel（月班總表＋排班表＋統計報表）、PDF（月班總表＋排班表＋統計＋預假清單）。月班總表的休假：<b>預假為大寫OFF</b>（橘底），一般休假為小寫off。</li>
-        <li><b>☁️ 雲端</b>：預設關閉（資料只存這台電腦）。按「☁️ 雲端設定」→ 確定即開始同步，之後不同裝置開同一網址即共用。首次使用需先在 Firebase 規則開放 <code>ymErNurseShiftData</code> 節點。</li>
+        <li><b>☁️ 雲端同步</b>：每台裝置打開網址就自動連上雲端、共用同一份班表（右上角顯示「☁️ 已連線」）。任何一台改了班，其他裝置幾秒內就會看到。<b>某台電腦第一次連上時，如果它裡面有自己改過、跟雲端不一樣的班表，會先問你要用哪一份</b>；選用雲端的話，那台原本的資料會先下載成備份檔，不會不見。要讓某台裝置不同步，按「☁️ 雲端設定」把網址清空。</li>
         <li><b>8～10 月班表</b>：已轉入楊梅 115 年 8、9、10 月的正式班表（含預假、預班、院方行程 H、備註），並標記為「✅ 完成本月」唯讀；11 月起各人的本班預設沿用 10 月。要改已鎖定的月份，點上方紅色橫幅輸入密碼取消完成。</li>
       </ul>
 
@@ -6919,13 +6919,37 @@ function autoLoad(){
     return true;
   }catch(e){return false;}
 }
-// 楊梅版預設「不連雲端」：Firebase 規則還沒開放 ymErNurseShiftData 前，一連線就會跳權限不足的警告。
-// 需要多台裝置共用時，按「☁️ 雲端設定」確定一次(預設帶入 DEFAULT_CLOUD_URL)才開始同步。
+// 楊梅版自 2026-10-02 起預設連上主任的 Firebase(tenchener-488d2，節點 ymErNurseShiftData)，
+// 每台裝置打開網址就自動同步，不必逐台設定；只有在「☁️ 雲端設定」留空斷開過的裝置才不連。
+const CLOUD_SYNCED_KEY='yangmeiTC_erNurseShiftCloudSynced'; // 這台裝置是否已跟雲端完成過第一次同步
 function getCloudUrl(){
   const v=localStorage.getItem(CLOUD_URL_KEY);
-  if(!v||v==='off') return '';
-  return v;
+  if(v==='off') return '';
+  return v||DEFAULT_CLOUD_URL;
 }
+// 比對兩份資料「實際內容」是否相同(班表/預假預班/人員設定)。Firebase 讀回來的陣列可能變成物件、
+// 空陣列會消失、key 順序會變，所以不能直接比 JSON 字串，要先攤平成排序過的清單。
+function ymFingerprint(d){
+  const arr=v=>Array.isArray(v)?v:(v&&typeof v==='object'?Object.keys(v).sort((a,b)=>a-b).map(k=>v[k]):[]);
+  const parts=[];
+  const sch=(d&&d.schedule)||{};
+  for(const date of Object.keys(sch).sort()){
+    const ds=sch[date]||{}; const seg=[];
+    for(const sh of ['D','E','N','D12','N12','H']){ const ids=arr(ds[sh]).filter(Boolean).sort(); if(ids.length) seg.push(sh+':'+ids.join(',')); }
+    if(seg.length) parts.push(date+'='+seg.join(';'));
+  }
+  const pr=(d&&d.preRequests)||{};
+  for(const date of Object.keys(pr).sort()){
+    const l=arr(pr[date]).map(p=>p&&(p.docId+'/'+p.type)).filter(Boolean).sort();
+    if(l.length) parts.push('pr'+date+'='+l.join(','));
+  }
+  for(const doc of arr(d&&d.doctors)){
+    const p=doc.prefs||{};
+    parts.push('doc'+doc.id+'='+[doc.name,doc.type,p.gender,p.seniority,p.partTime?1:0,doc.retiredOn||'',doc.archived?1:0].join('|'));
+  }
+  return parts.join('\n');
+}
+let _seedFingerprint=null, _hadLocalData=false;
 async function initCloud(url){
   if(!url){ updateCloudStatus(false); return; }
   if(!window.firebase){ updateCloudStatus(false,'SDK未載入'); return; }
@@ -6939,14 +6963,37 @@ async function initCloud(url){
     _fbRef.on('value', snap=>{
       if(_fbIgnoreOwn) return;
       const data=snap.val();
+      const markSynced=()=>{ try{ localStorage.setItem(CLOUD_SYNCED_KEY,'1'); }catch(e){} };
+      const firstSync=!localStorage.getItem(CLOUD_SYNCED_KEY);
       if(!data){
-        // 雲端目前真的是空的(全新資料庫，或從未同步過)：標記為就緒，之後正常的存檔動作
-        // (autoSave/cloudSave)才會把本機資料寫上去；這裡「不」主動寫入，避免任何一台裝置
-        // 單方面決定共用雲端的初始內容。
+        // 雲端目前是空的(第一次綁定)：由編輯模式的裝置把目前資料傳上去當第一份(含8~10月正式班表)。
+        // 手機看板模式(唯讀)不上傳，等編輯的電腦來建立。
         _cloudReady=true;
-        updateCloudStatus(true,'雲端目前無資料，將於下次存檔建立');
+        if(!_viewOnly){
+          if(!_lastLocalTs) _lastLocalTs=Date.now();
+          cloudSave(); markSynced();
+          updateCloudStatus(true,'已上傳為雲端第一份資料');
+        } else updateCloudStatus(true,'雲端目前無資料');
         return;
       }
+      // 這台裝置第一次跟雲端同步，而且這台有自己改過的資料(不是網站原始內容)、又跟雲端不一樣：
+      // 不能默默用雲端蓋掉，先問要用哪一份；選雲端的話，這台原本的資料先下載成備份檔。
+      if(firstSync&&!_viewOnly&&_hadLocalData){
+        const localFp=ymFingerprint(serializeState());
+        if(localFp!==_seedFingerprint&&localFp!==ymFingerprint(data)){
+          const useLocal=confirm('☁️ 第一次連上雲端：這台電腦裡的班表跟雲端上的不一樣。\n\n'
+            +'【確定】用這台電腦的資料上傳，覆蓋雲端（之後所有裝置都看這份）\n'
+            +'【取消】改用雲端的資料（這台原本的資料會先下載成備份檔，需要時可用「📂 還原備份」找回）');
+          markSynced();
+          if(useLocal){
+            _cloudReady=true; _lastLocalTs=Date.now(); cloudSave();
+            updateCloudStatus(true,'已用這台的資料覆蓋雲端');
+            return;
+          }
+          try{ backupJSON(); }catch(e){}
+        }
+      }
+      markSynced();
       if(data._ts&&data._ts<=_lastLocalTs){
         // 雲端資料不比本機新：過去的做法是直接把本機資料蓋回雲端(cloudSave())——這正是
         // 「環境不小心把本機這份意外開啟，完全不需要使用者互動就覆蓋掉雲端共用資料」的風險
@@ -6965,11 +7012,8 @@ async function initCloud(url){
       // 此時 _cloudReady 永遠是 false、cloudSave 不會寫出任何東西，
       // 必須明講，否則使用者會以為已經在同步。
       _cloudReady=false;
-      updateCloudStatus(false,'權限不足（規則未開放 ymErNurseShiftData）');
-      showToast('☁️ 雲端讀取被拒：Firebase 資料庫規則尚未開放本系統的節點 '
-        +'ymErNurseShiftData。目前資料仍會完整存在這台裝置的瀏覽器，等規則開通後才會開始同步。'
-        +'（請到 Firebase Console → Realtime Database → 規則，加上 "ymErNurseShiftData": '
-        +'{".read":"auth != null", ".write":"auth != null"}）','warn',true);
+      updateCloudStatus(false,'雲端尚未開通');
+      showToast('☁️ 雲端尚未開通（Firebase 規則還沒開放 ymErNurseShiftData），資料暫存在這台裝置，開通後會自動同步。','warn');
     });
     updateCloudStatus(true,'連線中…');
     localStorage.setItem(CLOUD_URL_KEY,url.trim());
@@ -7707,7 +7751,8 @@ function generatePDF(){
 // INIT
 // ============================================================
 window.onload=()=>{
-  autoLoad();
+  _seedFingerprint=ymFingerprint(serializeState()); // 網站原始內容(還沒載入本機存檔前)的指紋
+  _hadLocalData=autoLoad();
   if(_ymSeedMigrated){ try{ localStorage.setItem(LS_KEY,JSON.stringify({...serializeState(),_ts:_lastLocalTs})); }catch(e){} }
   _prCalYear=state.year; _prCalMonth=state.month;
   _prListYear=state.year; _prListMonth=state.month;
