@@ -685,7 +685,7 @@ body.board-mode #bd-monthbar{display:flex;}
       <h3 class="help-h3">📅 二、排班表</h3>
       <ul class="help-ul">
         <li>以日曆方式呈現，每天 D／E／N 各班的人員。每班第一格標 <b>「資」</b> 的是<b>資深格</b>（只有資深能排，確保這班有資深），其餘格子資深資淺都可以；手動多加的人標「支」。</li>
-        <li><b>👥 每班人數設定</b>：設定 D／E／N 每班幾個人（預設 D4／E4／N2，比照 8 月班表），以及每班的資深格／一般格：<b>一般格的數目＝這班的資淺人數上限</b>（預設 D、E 資深2＋一般2 → 資淺最多2位；N 資深1＋一般1 → 資淺最多1位；資深格填 0＝不限制）。</li>
+        <li><b>👥 每班人數設定</b>：<b>平日、假日各設一組</b> D／E／N 每班幾個人（預設平日 D4／E4／N2、假日 D4／E4／N3；假日＝週六、日與排班表上標記的假日），以及每班的資深格／一般格：<b>一般格的數目＝這班的資淺人數上限</b>（預設 D、E 資深2＋一般2 → 資淺最多2位；N 平日資深1＋一般1、假日資深2＋一般1 → 資淺都最多1位；資深格填 0＝不限制）。改完下次自動排班生效；在排班表把某天改成假日／平日，那天的格子會立刻跟著換。</li>
         <li>點任一天可開啟編輯視窗，逐一指派人員；資淺不會出現在資深格的可選清單中。</li>
         <li><b>🔒 鎖定某人這天的班（只鎖一個人）</b>：編輯視窗中每位已指派的人旁有鎖頭鈕，按下鎖定後自動排班不會更動這個人這天的班別；日曆上該人名前會顯示 🔒。再按一次解鎖。</li>
         <li><b>🔓 鎖定此日（鎖整天）</b>：編輯視窗<b>最上方</b>有「🔓 鎖定此日」鈕，按下後再按「✔ 確認」即生效，該日在月曆會顯示<b>金色外框與「🔒鎖定」標記</b>。之後按「⚡ 自動排班」時<b>這一天完全不會被更動</b>——已排的人不會被換走，<b>刻意留白的空缺也會一路保持空著不補人</b>。適合已經喬好的日子（例如某天固定誰上班、或那天要留缺）先鎖住，再讓系統排其餘日子。<br>
@@ -781,12 +781,7 @@ body.board-mode #bd-monthbar{display:flex;}
 <div id="role-count-modal" class="modal-overlay">
   <div class="modal" style="max-width:420px">
     <h2>👥 每班人數設定</h2>
-    <p style="font-size:12px;color:#888;margin-bottom:10px">設定 D／E／N 每班要幾個人。<b style="color:#6a1b9a">資深格</b>＝只有資深能排；<b>一般格</b>＝資深資淺都能上，所以<b>一般格的數目就是這一班的「資淺人數上限」</b>。兩列加起來＝該班總人數。<br>預設 D、E 各 4 人（資深2＋一般2 → 資淺最多2位）、N 2 人（資深1＋一般1 → 資淺最多1位）。資深格填 0＝不限制資淺人數。<br>自動排班每次都會照這裡的人數重新排整月。</p>
-    <table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr><th style="text-align:left;padding:4px">格子</th><th>D班</th><th>E班</th><th>N班</th></tr></thead>
-      <tbody id="role-count-tbody"></tbody>
-      <tfoot><tr style="font-weight:700"><td style="padding:4px">合計</td><td id="role-count-total-D" style="text-align:center">-</td><td id="role-count-total-E" style="text-align:center">-</td><td id="role-count-total-N" style="text-align:center">-</td></tr></tfoot>
-    </table>
+    <div id="role-count-tables"></div>
     <div class="modal-actions">
       <button class="action-btn btn-green" onclick="saveRoleCountModal()" style="padding:6px 22px">✔ 儲存</button>
       <button class="btn-secondary" onclick="closeModal('role-count-modal')">✕ 取消</button>
@@ -885,15 +880,22 @@ const ROLES = {
   E:['資深','資深','一般','一般'],
   N:['資深','一般'],
 };
+// 假日(週六日＋手動標記的假日)另一組人數(2026-10-17)：D/E 同平日 4 人，N 3 人(資深2＋一般1 → 資淺仍最多1位)。
+const ROLES_HOL = {
+  D:['資深','資深','一般','一般'],
+  E:['資深','資深','一般','一般'],
+  N:['資深','資深','一般'],
+};
 // 畫面顯示用代號：資深格標「資」，一般格不標，手動加開的格子標「支」。
 const ROLE_ABBR = {資深:'資',一般:'',支援:'支'};
 const ROLE_ORDER=['資深','一般'];
-function defaultRoleCounts(){
+function defaultRoleCounts(hol){
+  const base=hol?ROLES_HOL:ROLES;
   const cnt={};
   for(const sh of ['D','E','N']){
     cnt[sh]={};
     for(const r of ROLE_ORDER) cnt[sh][r]=0;
-    for(const r of ROLES[sh]) cnt[sh][r]++;
+    for(const r of base[sh]) cnt[sh][r]++;
   }
   return cnt;
 }
@@ -903,17 +905,27 @@ function roleCountsToArray(counts){
   for(const r of ROLE_ORDER){ const n=counts&&counts[r]||0; for(let i=0;i<n;i++) arr.push(r); }
   return arr;
 }
-// 目前設定的角色人數模板(未自訂時退回 ROLES 現行結構)，供新產生的日期(尚無自訂roles時)使用。
+// 目前設定的角色人數模板(未自訂時退回 ROLES／ROLES_HOL 現行結構)，供新產生的日期(尚無自訂roles時)使用。
 // 只影響「之後新建立」的日期，不會回頭更動已存在班表的既有角色配置(尊重現有排班資料)。
-function getRoleTemplate(shift){
-  const counts=state.roleCounts&&state.roleCounts[shift];
-  return counts?roleCountsToArray(counts):[...ROLES[shift]];
+// 平日、假日各一組：有給日期就依該日是不是假日(isHoliday)取對應那組；沒給日期＝平日那組。
+function roleTemplateOf(shift,hol){
+  const rc=hol?state.roleCountsHol:state.roleCounts;
+  const counts=rc&&rc[shift];
+  return counts?roleCountsToArray(counts):[...(hol?ROLES_HOL:ROLES)[shift]];
 }
-// 排班表頁首的D/E/N角色文字說明，隨「角色人數設定」動態產生(不再寫死)。
+function getRoleTemplate(shift,dateStr){ return roleTemplateOf(shift,!!dateStr&&isHoliday(dateStr)); }
+// 平日、假日兩組中格數較多的那組(匯出統一欄寬用)
+function maxRoleTemplate(shift){
+  const w=roleTemplateOf(shift,false), h=roleTemplateOf(shift,true);
+  return h.length>w.length?h:w;
+}
+// 資淺上限：有資深格＝一般格數；沒有資深格＝不限制(null)
+function templateJuniorCap(arr){ return arr.includes('資深')?arr.filter(r=>r!=='資深').length:null; }
+// 排班表頁首的D/E/N角色文字說明，隨「角色人數設定」動態產生(不再寫死)；平日假日不同時兩組都列。
 function shiftRoleSummary(shift){
-  const arr=getRoleTemplate(shift);
-  const nS=arr.filter(r=>r==='資深').length;
-  return `${arr.length}人${nS?`，資淺最多${arr.length-nS}`:''}`;
+  const txt=arr=>{ const cap=templateJuniorCap(arr); return `${arr.length}人${cap!=null?`，資淺最多${cap}`:''}`; };
+  const w=txt(roleTemplateOf(shift,false)), h=txt(roleTemplateOf(shift,true));
+  return w===h?w:`平日${w}／假日${h}`;
 }
 function renderShiftRoleDesc(){
   const el=document.getElementById('shift-role-desc'); if(!el) return;
@@ -922,40 +934,51 @@ function renderShiftRoleDesc(){
     `<span class="slot-tag tag-E" style="display:inline-flex;width:auto;padding:1px 5px;margin-right:2px">E</span>16:00-24:00 (${shiftRoleSummary('E')})&nbsp;`+
     `<span class="slot-tag tag-N" style="display:inline-flex;width:auto;padding:1px 5px;margin-right:2px">N</span>00:00-08:00次日 (${shiftRoleSummary('N')})`;
 }
+// 平日(set=w)、假日(set=h)各一張表：列＝資深格/一般格，欄＝D/E/N，最下面一列合計＝該班總人數
 function openRoleCountModal(){
-  const tbody=document.getElementById('role-count-tbody');
-  const c=state.roleCounts||defaultRoleCounts();
-  const ROW_LABEL={資深:'<b style="color:#6a1b9a">資深格</b><div style="font-size:10px;color:#888">只有資深能上</div>',一般:'一般格<div style="font-size:10px;color:#888">＝資淺人數上限</div>'};
-  tbody.innerHTML=ROLE_ORDER.map(r=>
-    `<tr><td style="padding:4px">${ROW_LABEL[r]||r}</td>`+
-    ['D','E','N'].map(sh=>`<td style="text-align:center"><input type="number" min="0" style="width:50px" class="rc-input" data-shift="${sh}" data-role="${r}" value="${(c[sh]&&c[sh][r])||0}" onchange="updateRoleCountModalTotals()"></td>`).join('')+
-    `</tr>`
+  const box=document.getElementById('role-count-tables');
+  const SETS=[{k:'w',title:'平日',c:state.roleCounts||defaultRoleCounts()},{k:'h',title:'假日',c:state.roleCountsHol||defaultRoleCounts(true)}];
+  const ROW_LABEL={資深:'<b style="color:#6a1b9a">資深格</b>',一般:'一般格(資淺上限)'};
+  box.innerHTML=SETS.map(s=>
+    `<div style="font-weight:700;margin:10px 0 4px">${s.title}</div>`+
+    `<table style="width:100%;border-collapse:collapse;font-size:13px">`+
+    `<thead><tr><th style="text-align:left;padding:4px">格子</th><th>D班</th><th>E班</th><th>N班</th></tr></thead><tbody>`+
+    ROLE_ORDER.map(r=>
+      `<tr><td style="padding:4px">${ROW_LABEL[r]||r}</td>`+
+      ['D','E','N'].map(sh=>`<td style="text-align:center"><input type="number" min="0" inputmode="numeric" style="width:50px" class="rc-input" data-set="${s.k}" data-shift="${sh}" data-role="${r}" value="${(s.c[sh]&&s.c[sh][r])||0}" oninput="updateRoleCountModalTotals()"></td>`).join('')+
+      `</tr>`
+    ).join('')+
+    `</tbody><tfoot><tr style="font-weight:700"><td style="padding:4px">合計</td>`+
+    ['D','E','N'].map(sh=>`<td id="role-count-total-${s.k}-${sh}" style="text-align:center">-</td>`).join('')+
+    `</tr></tfoot></table>`
   ).join('');
   updateRoleCountModalTotals();
   document.getElementById('role-count-modal').classList.add('show');
 }
 function updateRoleCountModalTotals(){
-  for(const sh of ['D','E','N']){
+  for(const k of ['w','h']) for(const sh of ['D','E','N']){
     let sum=0;
-    document.querySelectorAll(`.rc-input[data-shift="${sh}"]`).forEach(inp=>sum+=parseInt(inp.value)||0);
-    document.getElementById('role-count-total-'+sh).textContent=sum;
+    document.querySelectorAll(`.rc-input[data-set="${k}"][data-shift="${sh}"]`).forEach(inp=>sum+=parseInt(inp.value)||0);
+    const el=document.getElementById(`role-count-total-${k}-${sh}`); if(el) el.textContent=sum;
   }
 }
 function saveRoleCountModal(){
-  const newCounts={D:{},E:{},N:{}};
-  for(const r of ROLE_ORDER){ newCounts.D[r]=0; newCounts.E[r]=0; newCounts.N[r]=0; }
+  const blank=()=>{ const o={D:{},E:{},N:{}}; for(const r of ROLE_ORDER){ o.D[r]=0; o.E[r]=0; o.N[r]=0; } return o; };
+  const newCounts={w:blank(),h:blank()};
   document.querySelectorAll('.rc-input').forEach(inp=>{
-    newCounts[inp.dataset.shift][inp.dataset.role]=Math.max(0,parseInt(inp.value)||0);
+    newCounts[inp.dataset.set][inp.dataset.shift][inp.dataset.role]=Math.max(0,parseInt(inp.value)||0);
   });
-  const anyPositive=sh=>ROLE_ORDER.some(r=>newCounts[sh][r]>0);
-  if(!anyPositive('D')||!anyPositive('E')||!anyPositive('N')){
-    showToast('❌ 每個班別至少要1個人','warn');
+  const anyPositive=(c,sh)=>ROLE_ORDER.some(r=>c[sh][r]>0);
+  for(const k of ['w','h']) if(!['D','E','N'].every(sh=>anyPositive(newCounts[k],sh))){
+    showToast(`❌ ${k==='w'?'平日':'假日'}每個班別至少要1個人`,'warn');
     return;
   }
   pushUndo();
-  state.roleCounts=newCounts;
+  state.roleCounts=newCounts.w;
+  state.roleCountsHol=newCounts.h;
   autoSave();
   renderShiftRoleDesc();
+  renderMixSetupHint();
   closeModal('role-count-modal');
   showToast('✅ 每班人數已儲存(下次自動排班／清空後生效)');
 }
@@ -1252,6 +1275,7 @@ let state = {
   lockedDays: new Set(),   // 單日鎖定：該日整天凍結，自動排班完全不動（含空缺）
   minRestHours: 16,
   roleCounts: defaultRoleCounts(),
+  roleCountsHol: defaultRoleCounts(true), // 假日每班人數(週六日＋標記的假日)
   schedule: JSON.parse(JSON.stringify({...YM_SEED_2026_08.schedule,...YM_SEED_2026_09_10.schedule})),
   hourAdjust: {},
   dayNotes: {...YM_SEED_2026_08.dayNotes,'2026-10-09':'國慶補假','2026-10-10':'國慶日','2026-10-25':'光復節','2026-10-26':'光復節補假','2026-12-25':'行憲紀念日',...YM_SEED_2026_09_10.dayNotes},
@@ -1327,7 +1351,7 @@ let _redoStack = [];
 function snapshotUndoable(){
   return JSON.stringify({
     schedule:state.schedule, hourAdjust:state.hourAdjust, dayNotes:state.dayNotes, preRequests:state.preRequests, monthlyShiftType:state.monthlyShiftType, monthlyRolePref:state.monthlyRolePref,
-    doctors:state.doctors, holidays:[...state.holidays], lockedDays:[...(state.lockedDays||[])], minRestHours:state.minRestHours, roleCounts:state.roleCounts,
+    doctors:state.doctors, holidays:[...state.holidays], lockedDays:[...(state.lockedDays||[])], minRestHours:state.minRestHours, roleCounts:state.roleCounts, roleCountsHol:state.roleCountsHol,
     workDateRange:state.workDateRange, maxConsecByShift:state.maxConsecByShift,
     maxOffDays:state.maxOffDays, maxOffHolidayDays:state.maxOffHolidayDays,
     longLeaveExempt:state.longLeaveExempt, longLeaveDays:state.longLeaveDays, avoidPairs:state.avoidPairs, pairRules:state.pairRules, posLocks:state.posLocks, nurseOrder:state.nurseOrder
@@ -1339,6 +1363,7 @@ function restoreUndoable(snap){
   state.holidays=new Set(snap.holidays||[]); state.lockedDays=new Set(snap.lockedDays||[]);
   state.minRestHours=snap.minRestHours??state.minRestHours;
   state.roleCounts=snap.roleCounts||defaultRoleCounts();
+  state.roleCountsHol=snap.roleCountsHol||defaultRoleCounts(true);
   state.workDateRange=snap.workDateRange||{}; state.maxConsecByShift=snap.maxConsecByShift||state.maxConsecByShift;
   state.maxOffDays=snap.maxOffDays??null; state.maxOffHolidayDays=snap.maxOffHolidayDays??null;
   state.longLeaveExempt=snap.longLeaveExempt||{}; state.longLeaveDays=snap.longLeaveDays||{};
@@ -1582,7 +1607,7 @@ function getShiftEndTime(shift,date){ const{e}=shiftRange(shift); return e<=24?{
 function ensureDay(dateStr){
   if(!state.schedule[dateStr]) state.schedule[dateStr]={};
   const ds=state.schedule[dateStr];
-  if(!ds.roles) ds.roles={D:getRoleTemplate('D'),E:getRoleTemplate('E'),N:getRoleTemplate('N')};
+  if(!ds.roles) ds.roles={D:getRoleTemplate('D',dateStr),E:getRoleTemplate('E',dateStr),N:getRoleTemplate('N',dateStr)};
   for(const sh of SHIFTS){
     if(!ds[sh]||ds[sh].length!==ds.roles[sh].length){
       const old=ds[sh]||[];
@@ -1597,7 +1622,7 @@ function ensureDay(dateStr){
 }
 function getRoles(dateStr,shift){
   const ds=state.schedule[dateStr];
-  return (ds&&ds.roles&&ds.roles[shift])||getRoleTemplate(shift);
+  return (ds&&ds.roles&&ds.roles[shift])||getRoleTemplate(shift,dateStr);
 }
 
 // ============================================================
@@ -3950,7 +3975,7 @@ function generateScheduleAttempt(y,m,dates){
     const hasSpecial=(existing.D12&&existing.D12.length>0)||(existing.N12&&existing.N12.length>0);
     const roles=hasSpecial
       ? (existing.roles||{D:[],E:[],N:[]})
-      : {D:getRoleTemplate('D'),E:getRoleTemplate('E'),N:getRoleTemplate('N')};
+      : {D:getRoleTemplate('D',d),E:getRoleTemplate('E',d),N:getRoleTemplate('N',d)};
     // D12/N12(12小時特殊班)為手動排列、不參與自動排班，故直接沿用既有指派、原樣帶入結果，
     // 不可被自動排班的產生過程覆蓋或遺失；isAssignedThatDay等忙碌檢查會讀到這裡的資料，
     // 讓一般D/E/N的排班自動避開這些已佔用12小時班的人。
@@ -4725,7 +4750,7 @@ function renderCalendar(){
       const short=filled<roles.length;
       // 超排：實際人數 > 角色人數設定的上限(多的人掛在支援格，格數也會跟著變多，
       // 因此 filled/roles.length 看起來會是滿的，要另外比對上限才看得出來)
-      const limitHere=getRoleTemplate(si.shift).length;
+      const limitHere=getRoleTemplate(si.shift,dateStr).length;
       const overHere=filled>limitHere;
       const block=document.createElement('div');
       block.className='shift-block';
@@ -4782,6 +4807,7 @@ function toggleHol(dateStr,e){
   pushUndo();
   if(state.holidays.has(dateStr)) state.holidays.delete(dateStr);
   else state.holidays.add(dateStr);
+  if(!isDayLocked(dateStr)) fitDayRolesToTemplate(dateStr); // 平日↔假日人數不同：當天格子跟著換
   autoSave(); renderCalendar(); renderMasterGrid();
 }
 function escAttr(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -4933,7 +4959,7 @@ function _syncDraftExclusivity(){
       ds[sh]=[];
     } else if(ds.roles[sh].length===0){
       // 只在「先前被D12/N12清空過」的情況下還原(避免管理者手動刪光一般班格子後被強制補回)
-      const template=getRoleTemplate(sh);
+      const template=getRoleTemplate(sh,_dayDraftDate);
       ds.roles[sh]=[...template];
       ds[sh]=Array(template.length).fill(null);
     }
@@ -5136,7 +5162,7 @@ function renderMixSetupHint(){
   const h=rosterMixSetupHint();
   el.innerHTML=h.miss.length
     ?`⚠ 名冊裡目前沒有標記任何<b>${h.miss.join('、')}</b>，「資淺人數上限／同一班不可全是男生」規則等於沒有作用。請在下表的「性別」「年資」欄點一下切換。`
-    :`✅ 目前名冊：男 ${h.nM} 人、女 ${h.nF} 人；資深 ${h.nS} 人、資淺 ${h.nJ} 人。自動排班會確保每班資淺不超過上限（${['D','E','N'].map(sh=>{const a=getRoleTemplate(sh);return sh+'班最多'+(a.includes('資深')?a.filter(r=>r!=='資深').length:'不限');}).join('、')}）、不會全是男生。`;
+    :`✅ 目前名冊：男 ${h.nM} 人、女 ${h.nF} 人；資深 ${h.nS} 人、資淺 ${h.nJ} 人。自動排班會確保每班資淺不超過上限（${['D','E','N'].map(sh=>{const cw=templateJuniorCap(roleTemplateOf(sh,false)), ch=templateJuniorCap(roleTemplateOf(sh,true)), t=c=>c==null?'不限':c;return sh+'班最多'+(cw===ch?t(cw):`${t(cw)}(假日${t(ch)})`);}).join('、')}）、不會全是男生。`;
   el.style.background=h.miss.length?'#fff3e0':'#e8f5e9';
   el.style.color=h.miss.length?'#e65100':'#2e7d32';
 }
@@ -6166,7 +6192,7 @@ function dayRolesMismatch(dateStr){
   // 本來就不會等於角色人數設定，不算不符。
   if((ds.D12&&ds.D12.length)||(ds.N12&&ds.N12.length)) return null;
   for(const sh of SHIFTS){
-    const want=getRoleTemplate(sh), got=[...(ds.roles[sh]||[])];
+    const want=getRoleTemplate(sh,dateStr), got=[...(ds.roles[sh]||[])];
     if(want.length!==got.length) return sh;
     const w=[...want].sort(), g=got.sort();
     for(let i=0;i<w.length;i++) if(w[i]!==g[i]) return sh;
@@ -6447,7 +6473,7 @@ function syncDayRolesForSpecialShift(dateStr){
       ds.roles[sh]=[];
       ds[sh]=[];
     } else {
-      const template=getRoleTemplate(sh);
+      const template=getRoleTemplate(sh,dateStr);
       if(ds.roles[sh].length<template.length){
         const old=[...ds[sh]];
         ds.roles[sh]=[...template];
@@ -6499,6 +6525,30 @@ function normalizeDayRoles(dateStr){
   }
   return changed;
 }
+// 把某一天 D/E/N 的標準格換成該日(平日／假日)的人數設定：少的格子補空位；多的格子先拿掉空的，
+// 還多就改成「支援」格(人照樣留著，日期會提示超過上限)。手動加開的支援格不動。
+function fitDayRolesToTemplate(dateStr){
+  const ds=state.schedule[dateStr]; if(!ds||!ds.roles) return false;
+  if((ds.D12&&ds.D12.length)||(ds.N12&&ds.N12.length)) return false; // 12小時特班日不動
+  let changed=false;
+  for(const sh of SHIFTS){
+    const roles=ds.roles[sh], arr=ds[sh]; if(!roles||!arr) continue;
+    const want={}, have={};
+    for(const r of getRoleTemplate(sh,dateStr)) want[r]=(want[r]||0)+1;
+    for(const r of roles) if(r!=='支援') have[r]=(have[r]||0)+1;
+    for(const r of Object.keys(have)){
+      let extra=have[r]-(want[r]||0);
+      for(let i=roles.length-1;i>=0&&extra>0;i--) if(roles[i]===r&&!arr[i]){ roles.splice(i,1); arr.splice(i,1); extra--; changed=true; }
+      for(let i=roles.length-1;i>=0&&extra>0;i--) if(roles[i]===r){ roles[i]='支援'; extra--; changed=true; }
+    }
+    for(const r of ROLE_ORDER){
+      let miss=(want[r]||0)-(have[r]||0);
+      while(miss-->0){ const at=roles.indexOf('支援'), pos=at<0?roles.length:at; roles.splice(pos,0,r); arr.splice(pos,0,null); changed=true; }
+    }
+  }
+  if(changed) normalizeDayRoles(dateStr);
+  return changed;
+}
 let _normalizing=false;
 function normalizeMonthRoles(y,m){
   if(_normalizing) return false;
@@ -6530,7 +6580,7 @@ function dayStaffIssues(dateStr){
     const arr=ds[sh]||[];
     const filled=arr.filter(Boolean).length;
     const slots=((ds.roles&&ds.roles[sh])||[]).length;
-    const limit=getRoleTemplate(sh).length;
+    const limit=getRoleTemplate(sh,dateStr).length;
     if(arr.some(x=>!x)) short.push({shift:sh,filled,slots});
     if(filled>limit) over.push({shift:sh,filled,limit});
   }
@@ -6748,7 +6798,7 @@ function clearSchedule(){
   // 清空時角色配置一併重設回目前設定的模板(移除累積的支援格)，讓清空後的月份
   // 乾淨對應目前的角色人數設定，不沿用該月先前可能已膨脹的支援格數。
   for(const d of dates){
-    const roles={D:getRoleTemplate('D'),E:getRoleTemplate('E'),N:getRoleTemplate('N')};
+    const roles={D:getRoleTemplate('D',d),E:getRoleTemplate('E',d),N:getRoleTemplate('N',d)};
     state.schedule[d]={roles,D:Array(roles.D.length).fill(null),E:Array(roles.E.length).fill(null),N:Array(roles.N.length).fill(null)};
     delete state.hourAdjust[d];
   }
@@ -6775,6 +6825,7 @@ function serializeState(){
     holidays:[...state.holidays],lockedDays:[...(state.lockedDays||[])],year:state.year,month:state.month,
     minRestHours:state.minRestHours,monthlyShiftType:state.monthlyShiftType||{},monthlyRolePref:state.monthlyRolePref||{},
     roleCounts:state.roleCounts||defaultRoleCounts(),
+    roleCountsHol:state.roleCountsHol||defaultRoleCounts(true),
     workDateRange:state.workDateRange||{},
     maxConsecByShift:state.maxConsecByShift||{D:6,E:6,N:5},
     maxOffDays:state.maxOffDays??null,maxOffHolidayDays:state.maxOffHolidayDays??null,
@@ -6854,6 +6905,8 @@ function applyData(d){
   state.roleCounts=d.roleCounts||defaultRoleCounts();
   // 規則版本2(2026-09-26)：「每班至少1資深」改為「D/E 資淺最多2、N 最多1」，舊存檔的每班人數設定換成新預設
   if(!(d.ymRulesVer>=YM_RULES_VER)) state.roleCounts=defaultRoleCounts();
+  // 假日人數(2026-10-17 新增)：舊存檔沒有這組 → 用預設 D/E/N 4/4/3
+  state.roleCountsHol=d.roleCountsHol||defaultRoleCounts(true);
   state.monthlyShiftType=d.monthlyShiftType||{};
   state.monthlyRolePref=d.monthlyRolePref||{};
   state.workDateRange=d.workDateRange||{};
@@ -7140,7 +7193,7 @@ function restoreJSON(input){
 function exportColCounts(dates){
   const cnt={};
   for(const sh of SHIFTS){
-    cnt[sh]=getRoleTemplate(sh).length;
+    cnt[sh]=maxRoleTemplate(sh).length;
     for(const d of dates){
       const a=(state.schedule[d]||{})[sh];
       if(a&&a.length>cnt[sh]) cnt[sh]=a.length;
@@ -7149,8 +7202,10 @@ function exportColCounts(dates){
   return cnt;
 }
 function exportHeaderRoles(sh,count){
-  const tmpl=getRoleTemplate(sh);
-  const out=[...tmpl];
+  const w=roleTemplateOf(sh,false), h=roleTemplateOf(sh,true);
+  // 平日、假日的格子組成不同時，同一欄在兩種日子代表的位置不一樣 → 表頭改用編號(N1、N2、N3)
+  if(w.join()!==h.join()) return Array.from({length:count},(_,i)=>String(i+1));
+  const out=[...w];
   while(out.length<count) out.push('支援');
   return out;
 }
