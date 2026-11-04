@@ -707,7 +707,7 @@ body.board-mode #bd-monthbar{display:flex;}
 
       <h3 class="help-h3">👩‍⚕️ 三、護理師設定</h3>
       <ul class="help-ul">
-        <li><b>性別直接在清單上點一下就能切換</b>（男／女），是「同一班不可全是男生」的依據；<b>可上位置</b>在清單上直接勾選（A、B、C、檢，可複選，預設全勾，至少要留一個）。大夜的 BC 位置要 B、C 都有勾才能上。清單上方會顯示男女人數與每個位置有幾個人能上，沒人能上的位置會出現橘色提醒。</li>
+        <li><b>性別直接在清單上點一下就能切換</b>（男／女），是「同一班不可全是男生」的依據；<b>可上位置</b>在清單上直接勾選（A、B、C、檢，可複選，預設全勾，至少要留一個）。大夜的 BC 位置勾 B 或 C 任一個就能上。清單上方會顯示男女人數與每個位置有幾個人能上，沒人能上的位置會出現橘色提醒。</li>
         <li>新增／編輯護理師：姓名、顏色、當月班別、性別、可上位置、是否可支援、最多連上天數、個人偏好、當月工作日期（到職／離職）。</li>
         <li>可否跨班別支援、每月班別（該月主要上哪一班）皆在此區設定，並可逐月獨立記錄。</li>
         <li><b>護理長（美文）</b>設為「管理職」：不參與輪班；按自動排班時，平日（非週末、非國定假日）會自動掛<b>行政班 H</b>、週末／國定假日休。當天已手動排的班（值班、預假）不會被動到。</li>
@@ -765,7 +765,7 @@ body.board-mode #bd-monthbar{display:flex;}
         <li><b style="color:#c0392b">一個月跳班最多 4 次</b>：跳班＝「相鄰兩個有上班的日子班別不同」算一次（例如 E E N N E 算 2 次；中間隔休假不影響）。排回本班造成的跳班也算。（同樣只有在會空班時才破例並列出。）</li>
         <li><b>放假天數集中</b>：全體放假天數落差控制在 4 個相鄰數字內（班數全距 ≤ 3）。</li>
         <li><b>尊重預假／預班</b>：預假（OFF）與預班（指定上班）一定照辦，且預班會鎖定不被更動。</li>
-        <li><b style="color:#c0392b">每個位置只排有勾選的人</b>：白班／小夜 A、B、C、檢，大夜 A、BC（BC 要 B、C 都有勾），假日大夜 A、B、C；整月每一步調整都遵守，同一班內部會自動調整誰站哪一格（例如只勾 A 的人進來，A、檢都有勾的人就讓到檢）。真的找不到有勾的人可上的那幾格（例如會檢的人都預假），會<b>先由其他人頂上、人數不短缺</b>，並在排班結果、月曆 ⚠ 與月班總表 ❗ 明確標出，請手動處理。</li>
+        <li><b style="color:#c0392b">每個位置只排有勾選的人</b>：白班／小夜 A、B、C、檢，大夜 A、BC（BC 勾 B 或 C 任一個就能上），假日大夜 A、B、C；整月每一步調整都遵守，同一班內部會自動調整誰站哪一格（例如只勾 A 的人進來，A、檢都有勾的人就讓到檢）。真的找不到有勾的人可上的那幾格（例如會檢的人都預假），會<b>先由其他人頂上、人數不短缺</b>，並在排班結果、月曆 ⚠ 與月班總表 ❗ 明確標出，請手動處理。</li>
         <li><b>兼職</b>（涵涵）：每月固定上幾天（預設 15 天）、可設定只排平日，不參與休假天數公平分配；匯出班表時沒上班的日子印「／」。在「護理師設定」編輯該人即可調整。</li>
         <li><b style="color:#c0392b">同一班不能全是男生</b>：排班時就會避開；若仍出現，會先試「同一天兩個班別的人互換」（誰上幾天班完全不變），換不了再請當天休假的女生頂班、並把她另一天的班還給被換下的男生（兩人班數不變）。仍無解的會在排班結果列出。</li>
         <li><b>大夜多放假</b>：休假天數分配時，大夜（N）同仁放假優先。</li>
@@ -886,7 +886,7 @@ body.board-mode #bd-monthbar{display:flex;}
 const MAX_CONSEC = 5; // 連班上限的備援預設值(當 state.maxConsecByShift 未設定時使用)；實際上限由排班表頁籤依D/E/N分別設定，可自行填選
 // ===== 楊梅天成：位置制(2026-11-04 取消資深/資淺) =====
 // 白班/小夜每班 4 個位置：A、B、C、檢；大夜 2 個位置：A、BC；假日大夜 3 個位置：A、B、C。
-// 每位護理師勾選「可上的位置」(A/B/C/檢，可複選，預設全勾)，存在 prefs.pos；BC 位置要 B、C 都有勾才能上。
+// 每位護理師勾選「可上的位置」(A/B/C/檢，可複選，預設全勾)，存在 prefs.pos；BC 位置勾 B 或 C 任一個就能上(2026-11-04 使用者指定)。
 // 沿用引擎原本的位置資格機制(roleAllowed)——greedy、休假平衡、緊急補位、連鎖挪動每一步都只把人放進
 // 他有勾的位置；同一班內部再用 reseatShiftArr 做最大配對(誰坐哪一格)，真的湊不出來才由沒勾的人頂上(人數優先)並標 ❗。
 // 人數／位置可在「👥 每班人數設定」調整。舊資料的「資深」「一般」格(8～10月正式班表)不限位置，原樣保留。
@@ -1012,11 +1012,11 @@ function nursePositions(prefs){
   if(!Array.isArray(p)) return [...POSITIONS];
   return POSITIONS.filter(x=>p.includes(x));
 }
-// 這個人能不能站這個位置。BC(大夜 B+C 合併)要 B、C 都有勾。支援格與舊資料的資深/一般格不限位置。
+// 這個人能不能站這個位置。BC(大夜 B+C 合併)勾 B 或 C 任一個就能上。支援格與舊資料的資深/一般格不限位置。
 function roleAllowed(prefs,role){
   if(!role||role==='支援'||role==='一般'||role==='資深'||role==='流動') return true;
   const pos=nursePositions(prefs);
-  if(role==='BC') return pos.includes('B')&&pos.includes('C');
+  if(role==='BC') return pos.includes('B')||pos.includes('C');
   return pos.includes(role);
 }
 function posLabelOf(prefs){ const p=nursePositions(prefs); return p.length?p.join('、'):'未勾選'; }
@@ -2940,7 +2940,7 @@ function listMixViolations(sched,dates){
     const ds=sched[d]; if(!ds) continue;
     for(const sh of SHIFTS){
       if(shiftAllMale(ds,sh)) out.push(`${d.slice(5)} ${sh}班全是男生`);
-      for(const x of shiftPosMismatchList(ds,sh)) out.push(`${d.slice(5)} ${sh}班${x.role}位置由${getDocName(x.nid)}頂(未勾${x.role})`);
+      for(const x of shiftPosMismatchList(ds,sh)) out.push(`${d.slice(5)} ${sh}班${x.role}位置由${getDocName(x.nid)}頂(未勾${x.role==='BC'?'B或C':x.role})`);
     }
   }
   return out;
@@ -6682,7 +6682,7 @@ function dayStaffIssues(dateStr){
   // 楊梅：班內組成(全男生／有人站在沒勾選的位置)。
   for(const sh of SHIFTS){
     if(shiftAllMale(ds,sh)) mix.push(`${sh}班全是男生`);
-    for(const x of shiftPosMismatchList(ds,sh)) mix.push(`${sh}班${x.role}位置由${getDocName(x.nid)}頂(未勾${x.role})`);
+    for(const x of shiftPosMismatchList(ds,sh)) mix.push(`${sh}班${x.role}位置由${getDocName(x.nid)}頂(未勾${x.role==='BC'?'B或C':x.role})`);
   }
   if((ds.D12&&ds.D12.length)||(ds.N12&&ds.N12.length)) return {short,over,mix};
   for(const sh of SHIFTS){
