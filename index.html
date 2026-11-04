@@ -516,7 +516,7 @@ body.board-mode #bd-monthbar{display:flex;}
       <span class="wk-legend wk-legend-btn" style="background:#cfd8dc;border-color:#607d8b" onclick="wkHiShift('H')" title="點一下把所有 H(行政) 格子亮起來，再點取消">H 行政</span>
       <span class="wk-legend wk-legend-btn" style="background:#ffc27a;border-color:#ef6c00" onclick="wkHiShift('S')" title="點一下把所有 D12/N12 格子亮起來，再點取消">D12/N12</span>
       <span class="wk-legend wk-legend-btn" style="background:#f1f3f4;border-color:#bdbdbd" onclick="wkHiShift('OFF')" title="點一下把所有 OFF(休假) 格子亮起來，再點取消">OFF 休假</span>
-      <button data-pwa-hide style="margin-left:auto;padding:5px 14px;border:1px solid #0d5c4a;border-radius:6px;background:#0d5c4a;color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap" onclick="tidyRoles()" title="只重新對應同一天、同一班別內部的位置(A／B／C／檢／BC，只會換到每個人有勾的位置)，讓每個人連續上班期間盡量待在同一個位置。完全不會更改上班人員——誰哪天上什麼班、班數、休假天數、假日班數全部不變。按錯可用排班表的「↩ 還原」復原。">🎯 位置優化</button>
+      <button data-pwa-hide style="margin-left:auto;padding:5px 14px;border:1px solid #0d5c4a;border-radius:6px;background:#0d5c4a;color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap" onclick="tidyRoles()" title="只重新對應同一天、同一班別內部的位置，讓每個人照 檢→A→B→C 的順序輪流(大夜 A、BC 交替；假日大夜 A→B→C；只會換到每個人有勾的位置)。完全不會更改上班人員——誰哪天上什麼班、班數、休假天數、假日班數全部不變。按錯可用排班表的「↩ 還原」復原。">🔄 位置輪流</button>
     </div>
     <div class="stats-wrap">
       <table id="work-table"><thead id="work-thead"></thead><tbody id="work-tbody"></tbody></table>
@@ -702,7 +702,7 @@ body.board-mode #bd-monthbar{display:flex;}
       <ul class="help-ul">
         <li>整月一覽表，每格顯示這個人當天站的位置（A、B、C、檢、BC），底色是班別；右邊統計每人各位置的天數。</li>
         <li>格子可直接輸入位置代號改位置，會和同一班原本站那個位置的人互換（兩人都要有勾對方的位置）。</li>
-        <li><b>🎯 位置優化</b>：只在同一天同一班內部重新對位，讓每個人連續上班時盡量站同一個位置，不會改動誰上哪一天哪一班。</li>
+        <li><b>🔄 位置輪流</b>：只在同一天同一班內部重新對位，讓每個人照 檢→A→B→C 的順序輪流，不會改動誰上哪一天哪一班。手動改過班、或舊的班表想照新順序重排位置時按一下。</li>
       </ul>
 
       <h3 class="help-h3">👩‍⚕️ 三、護理師設定</h3>
@@ -766,6 +766,7 @@ body.board-mode #bd-monthbar{display:flex;}
         <li><b>放假天數集中</b>：全體放假天數落差控制在 4 個相鄰數字內（班數全距 ≤ 3）。</li>
         <li><b>尊重預假／預班</b>：預假（OFF）與預班（指定上班）一定照辦，且預班會鎖定不被更動。</li>
         <li><b style="color:#c0392b">每個位置只排有勾選的人</b>：白班／小夜 A、B、C、檢，大夜 A、BC（BC 勾 B 或 C 任一個就能上），假日大夜 A、B、C；整月每一步調整都遵守，同一班內部會自動調整誰站哪一格（例如只勾 A 的人進來，A、檢都有勾的人就讓到檢）。真的找不到有勾的人可上的那幾格（例如會檢的人都預假），會<b>先由其他人頂上、人數不短缺</b>，並在排班結果、月曆 ⚠ 與月班總表 ❗ 明確標出，請手動處理。</li>
+        <li><b style="color:#c0392b">位置輪流</b>：每個人照 <b>檢→A→B→C→檢…</b> 的順序輪，上一次上班站檢、下一次就站 A，再下一次 B、C，中間休假也接著輪。大夜平日只有 A、BC，所以 A、BC 交替；假日大夜 A→B→C；沒勾的位置自動跳過（例如不會檢的人 A→B→C→A）。同一班裡兩個人輪到同一個位置時，會選最接近順序的排法，所以偶爾會跳一格。</li>
         <li><b>兼職</b>（涵涵）：每月固定上幾天（預設 15 天）、可設定只排平日，不參與休假天數公平分配；匯出班表時沒上班的日子印「／」。在「護理師設定」編輯該人即可調整。</li>
         <li><b style="color:#c0392b">同一班不能全是男生</b>：排班時就會避開；若仍出現，會先試「同一天兩個班別的人互換」（誰上幾天班完全不變），換不了再請當天休假的女生頂班、並把她另一天的班還給被換下的男生（兩人班數不變）。仍無解的會在排班結果列出。</li>
         <li><b>大夜多放假</b>：休假天數分配時，大夜（N）同仁放假優先。</li>
@@ -2236,7 +2237,8 @@ function scoreNurse(nurseId, date, shift, role, sched){
     if(base===pref) score+=12;
     else if(base&&LEVEL_ORDER[base]<LEVEL_ORDER[pref]) score-=6;
   }
-  // #7 位置固定(非強制)：昨天同班別且同角色，連段盡量待在同一個位置。
+  // #7 昨天同班別且同一格位置加分(沿用中壢)。楊梅的位置最後由 rotateRoles 統一改成輪流，這裡實際上只影響
+  //    「選誰來上班」的評分平衡——拿掉會讓休假全距變差(2026-11-04 實測)，所以保留原樣。
   if(last&&last.shift===shift){
     const yRole=roleOfNurseInSched(nurseId,addDays(date,-1),sched);
     if(yRole&&yRole===role) score+=6;
@@ -3846,9 +3848,9 @@ function enforceBoundaryDay1Work(newSched,fullSched,dates){
 // 每次執行的結果不一定相同——多數情況下會收斂到「零空班、班數只差相鄰兩數」，
 // 但在人力結構本來就緊繃(例如某角色全月合格人選很少)時，偶爾某一輪的亂數順序
 // 會導致收斂較差。因此 autoSchedule() 會呼叫本函式多次，取其中最好的一份結果。
-// 🎯 位置優化（手動鈕）：排完班、手動喬過之後，位置常常又會跳來跳去。
+// 🔄 位置輪流（手動鈕）：排完班、手動喬過之後，位置的輪流順序常會亂掉。
 // 這個按鈕只重新對應「同一天、同一班別內部」的人↔位置，完全不動誰哪天上什麼班，
-// 所以班數／休假／連班／鐵則統計一律不變，純粹讓每個人的位置連貫。
+// 所以班數／休假／連班／鐵則統計一律不變，純粹讓每個人照 檢→A→B→C 輪流。
 function tidyRoles(){
   if(typeof blockIfViewOnly==='function'&&blockIfViewOnly()) return;
   const readOnly=(typeof isCurrentMonthCompleted==='function')?isCurrentMonthCompleted()
@@ -3876,164 +3878,137 @@ function tidyRoles(){
       if(i>=0) _workLocks.add(cellKey(d,l.shift,i));
     }
   }
-  const before=countRoleJumps(state.schedule,y,m);
-  smoothRoles(state.schedule, state.schedule, dates, 8);
-  const after=countRoleJumps(state.schedule,y,m);
+  const before=countRotMiss(state.schedule,y,m);
+  rotateRoles(state.schedule, state.schedule, dates);
+  const after=countRotMiss(state.schedule,y,m);
   _workLocks=savedLocks;
   autoSave();
   renderCalendar();
   renderMasterGrid();
   renderWorkGrid();
   showToast(after<before
-    ? `✅ 位置已整理：全月位置變動 ${before} → ${after} 次（沒有更動任何人的班）`
-    : '位置已經是最連貫的排法，沒有可再調整的空間','ok');
+    ? `✅ 位置已重新輪流：沒照順序輪的 ${before} → ${after} 次（沒有更動任何人的班）`
+    : (after?'位置已經是最接近輪流順序的排法':'✅ 位置都已照順序輪流'),'ok');
 }
 // ============================================================
-// 位置連貫（smoothRoles）
-// 在「誰上哪一天的哪一班」完全不變的前提下，重新分配同一天同班別內部
-// 「人 ↔ 位置(A1組長／檢檢傷／A2重症／B留觀／A3流動／支支援)」的對應，
-// 讓每個人整段連班盡量待在同一個位置，休假回來後也盡量回到原本的位置，
-// 不要天天換位置（例如 檢→A1→A2→B 這種跳來跳去的排法）。
-// 【安全性】只在同一天、同一班別內部互換位置，完全不動任何人的上班日與班別，
-// 因此班數／休假天數／連班上限／休息時數／性別多元化／N-OFF-D／孤立單班／
-// 年資原則等所有鐵則與公平性結果一律不受影響（統計數字完全相同）。
-// 【硬約束】階級資格(roleAllowed)、位置優先(rolePrefBlocksRole 為強制)、
-//           預班與位置鎖定的格子(_workLocks)一律不動。
+// 位置輪流（楊梅 2026-11-04 使用者指定；與中壢「連班盡量站同一個位置」相反）
+// 每個人照 檢→A→B→C→檢… 的順序輪：上一個上班日站什麼，這一次就站下一個位置(中間休假也接著輪)。
+//   大夜平日只有 A、BC：BC 當作 B／C，BC 的下一個是「檢」→大夜沒有檢就輪到 A，所以大夜 A→BC→A… 交替；
+//   假日大夜 A→B→C→A；沒勾的位置自然跳過(例如不會檢的人 A→B→C→A)。
+// 【安全性】只在同一天、同一班別內部換「誰站哪一格」，誰上哪一天哪一班完全不動，班數／休假等統計不變。
+// 【硬約束】位置鎖定(posLocks)的人不動；站到沒勾的位置成本極高(只有原本就配不出來時才會留著)；
+//           預班等鎖定格(_workLocks)跟著人走；支援格不參與。
+// 做法：從月初往後一天一天排，每一班把「人→位置」做最小成本配對(位元 DP，一班最多 12 人)。
 // ============================================================
-// 位置索引：`日期|護理師id` → 位置，供「昨天/明天站哪裡」做 O(1) 比對（每次換位後即時更新）。
-function _buildRoleIndex(readSched,dates){
-  const idx=Object.create(null);
-  const{y,m}=ymFromDate(dates[0]);
-  const all=monthDates(y,m);
-  const scan=[addDays(all[0],-1),...all,addDays(all[all.length-1],1)];
-  for(const d of scan){
-    const ds=readSched[d]; if(!ds||!ds.roles) continue;
+const ROTATE_ORDER=['檢','A','B','C'];
+function _rotOrds(role){ if(role==='BC') return [2,3]; const i=ROTATE_ORDER.indexOf(role); return i>=0?[i]:null; }
+function _rotLastOrd(role){ if(role==='BC') return 3; const i=ROTATE_ORDER.indexOf(role); return i>=0?i:-1; }
+// 此人上一個「有站輪流位置」的上班日站在哪(往回最多找 31 天；支援格／舊資料格略過)，找不到回傳 -1
+function _prevRot(nid,date,getDs){
+  for(let k=1;k<=31;k++){
+    const ds=getDs(addDays(date,-k)); if(!ds||!ds.roles) continue;
     for(const sh of SHIFTS){
-      const arr=ds[sh]||[], roles=ds.roles[sh]||[];
-      for(let i=0;i<arr.length;i++) if(arr[i]&&roles[i]) idx[d+'|'+arr[i]]=roles[i];
+      const i=(ds[sh]||[]).indexOf(nid);
+      if(i>=0){ const o=_rotLastOrd(ds.roles[sh]&&ds.roles[sh][i]); if(o>=0) return {o,gap:k}; }
     }
   }
-  return idx;
+  return {o:-1,gap:99};
 }
-// 本月每人各站過幾天哪個位置：站越多天的位置越該繼續站，把一個人的位置收斂到
-// 一兩種（這樣連休假回來也還是同一個位置，不會整月五種位置輪流跑）。
-function _buildRoleCounts(sched,dates){
-  const cnt=Object.create(null);
-  for(const d of dates){
-    const ds=sched[d]; if(!ds||!ds.roles) continue;
+function _prevRotOrd(nid,date,getDs){ return _prevRot(nid,date,getDs).o; }
+// 連續上班(隔天就接著上)的輪流最重要，權重 3；中間有休假的接續權重 1。
+function _rotW(gap){ return gap===1?3:1; }
+// 輪流成本：照順序＝0；跳過一個位置＝1；跳兩個＝4；跟上次同一個位置＝9。
+function _rotCost(prevOrd,role){
+  const os=_rotOrds(role); if(!os||prevOrd<0) return 0;
+  const t=(prevOrd+1)%4; let d=4;
+  for(const o of os) d=Math.min(d,(o-t+4)%4);
+  return d*d;
+}
+// 最小成本指派：cost[人][格]，n×n，回傳每個人分到的格
+function _minCostAssign(cost){
+  const n=cost.length, N=1<<n;
+  const dp=new Float64Array(N).fill(Infinity), from=new Int8Array(N).fill(-1), pc=new Uint8Array(N);
+  for(let m=1;m<N;m++) pc[m]=pc[m>>1]+(m&1);
+  dp[0]=0;
+  for(let m=0;m<N;m++){
+    if(dp[m]===Infinity) continue;
+    const p=pc[m]; if(p>=n) continue;
+    for(let s=0;s<n;s++){ if(m&(1<<s)) continue; const nm=m|(1<<s), v=dp[m]+cost[p][s]; if(v<dp[nm]){ dp[nm]=v; from[nm]=s; } }
+  }
+  const res=new Array(n); let m=N-1;
+  for(let p=n-1;p>=0;p--){ const s=from[m]; res[p]=s; m^=(1<<s); }
+  return res;
+}
+// 此人下一個「有站輪流位置」的上班日站什麼位置(往後最多找 31 天)，找不到回傳 null
+function _nextRot(nid,date,getDs){
+  for(let k=1;k<=31;k++){
+    const ds=getDs(addDays(date,k)); if(!ds||!ds.roles) continue;
+    for(const sh of SHIFTS){
+      const i=(ds[sh]||[]).indexOf(nid);
+      if(i>=0){ const r=ds.roles[sh]&&ds.roles[sh][i]; if(_rotOrds(r)) return {r,gap:k}; }
+    }
+  }
+  return null;
+}
+// readSched：讀前一個月的位置(月初接著輪)；自動排班時傳 fullSched。回傳有調整的班數。
+// 第一輪從月初往後排(只看上一次站哪)；之後整月來回掃，每一班同時看「上一次→這次」與「這次→下一次」，
+// 直到沒有可改善為止——光看上一次會讓同一班幾個人撞到同一個「下一個位置」越撞越亂。
+function rotateRoles(newSched,readSched,dates){
+  if(!dates||!dates.length) return 0;
+  const getDs=d=>(d in newSched)?newSched[d]:readSched[d];
+  const sorted=[...dates].sort();
+  let moved=0;
+  const doShift=(date,sh,withNext)=>{
+    const ds=newSched[date]; if(!ds||!ds.roles) return false;
+    const arr=ds[sh], roles=ds.roles[sh]; if(!arr||!roles) return false;
+    const mov=[];
+    for(let i=0;i<arr.length;i++) if(arr[i]&&_rotOrds(roles[i])&&!isPosLocked(date,sh,arr[i])) mov.push(i);
+    if(mov.length<2||mov.length>12) return false;
+    const people=mov.map(i=>arr[i]);
+    const prev=people.map(p=>_prevRot(p,date,getDs));
+    const next=withNext?people.map(p=>_nextRot(p,date,getDs)):people.map(()=>null);
+    const cost=people.map((p,a)=>mov.map((i,b)=>{
+      let c=_rotCost(prev[a].o,roles[i])*_rotW(prev[a].gap);
+      if(next[a]) c+=_rotCost(_rotLastOrd(roles[i]),next[a].r)*_rotW(next[a].gap);
+      if(!roleAllowed(prefOf(p),roles[i])||rolePrefBlocksRole(p,date,roles[i])) c+=1000;
+      if(a!==b) c+=0.001;   // 同分時維持原格
+      return c;
+    }));
+    const asg=_minCostAssign(cost);
+    if(asg.every((b,a)=>b===a)) return false;
+    const lockedP=new Set(); for(const i of mov) if(isWorkLocked(date,sh,i)) lockedP.add(arr[i]);
+    for(const i of mov) _workLocks.delete(cellKey(date,sh,i));
+    people.forEach((p,a)=>{ arr[mov[asg[a]]]=p; });
+    for(const i of mov) if(lockedP.has(arr[i])) _workLocks.add(cellKey(date,sh,i));
+    return true;
+  };
+  for(const date of sorted) for(const sh of SHIFTS) if(doShift(date,sh,false)) moved++;
+  for(let r=0;r<12;r++){
+    const seq=(r%2)?sorted.slice().reverse():sorted;
+    let changed=false;
+    for(const date of seq) for(const sh of SHIFTS) if(doShift(date,sh,true)){ moved++; changed=true; }
+    if(!changed) break;
+  }
+  return moved;
+}
+// 沒照順序輪的次數：此人站的位置不是「這一班裡他有勾、最接近輪流順序」的那一個，就算一次(越少越好)。
+function countRotMiss(sched,y,m){
+  const getDs=d=>sched[d];
+  let miss=0;
+  for(const date of monthDates(y,m)){
+    const ds=sched[date]; if(!ds||!ds.roles) continue;
     for(const sh of SHIFTS){
       const arr=ds[sh]||[], roles=ds.roles[sh]||[];
       for(let i=0;i<arr.length;i++){
-        const nid=arr[i], r=roles[i];
-        if(!nid||!r) continue;
-        const c=cnt[nid]||(cnt[nid]=Object.create(null));
-        c[r]=(c[r]||0)+1;
+        const p=arr[i]; if(!p||!_rotOrds(roles[i])) continue;
+        const po=_prevRotOrd(p,date,getDs); if(po<0) continue;
+        const pf=prefOf(p);
+        let best=Infinity; for(const r of roles) if(_rotOrds(r)&&roleAllowed(pf,r)) best=Math.min(best,_rotCost(po,r));
+        if(best<Infinity&&_rotCost(po,roles[i])>best) miss++;
       }
     }
   }
-  return cnt;
-}
-// 某人站某個位置的「連貫分數」。selfRole＝他目前站的位置(計次要先扣掉自己這一天，
-// 否則「維持原狀」會憑空多算一次而永遠贏)。
-function _roleFit(nid,role,selfRole,pd,nd,idx,cnt,docMap){
-  let s=0;
-  if(idx[pd+'|'+nid]===role) s+=20;   // 接上昨天同位置（連班中不換位置，最重要）
-  if(idx[nd+'|'+nid]===role) s+=20;   // 接上明天同位置
-  const c=((cnt[nid]&&cnt[nid][role])||0)-(role===selfRole?1:0);
-  s+=Math.min(c,8)*3;               // 本月主力位置（跨越休假也連貫，權重低於接上前後日）
-  const doc=docMap[nid];
-  if(doc&&doc.prefs&&ROLE_BASE_LEVEL[role]===doc.prefs.level) s+=1; // 階級相符的位置略優先
-  return s;
-}
-// readSched 用 fullSched(含相鄰月)讀前後日，讓月初/月底也能跟上下個月的位置銜接。
-function smoothRoles(newSched,readSched,dates,rounds){
-  if(!dates||!dates.length) return;
-  const docMap=Object.create(null);
-  for(const d of state.doctors) docMap[d.id]=d;
-  const idx=_buildRoleIndex(readSched,dates);
-  const cnt=_buildRoleCounts(newSched,dates);
-  const canTake=(nid,date,role)=>{
-    const doc=docMap[nid];
-    if(!doc||!doc.prefs) return false;
-    if(!roleAllowed(doc.prefs,role)) return false;   // 階級資格：鐵則
-    if(rolePrefBlocksRole(nid,date,role)) return false;    // 位置優先：強制
-    return true;
-  };
-  const swap=(date,arr,roles,i,j)=>{
-    const ni=arr[i], nj=arr[j], ri=roles[i], rj=roles[j];
-    arr[i]=nj; arr[j]=ni;
-    idx[date+'|'+ni]=rj; idx[date+'|'+nj]=ri;
-    cnt[ni][ri]--; cnt[ni][rj]=(cnt[ni][rj]||0)+1;
-    cnt[nj][rj]--; cnt[nj][ri]=(cnt[nj][ri]||0)+1;
-  };
-  for(let r=0;r<(rounds||6);r++){
-    const seq=(r%2)?dates.slice().reverse():dates;   // 順掃/逆掃交替，讓前後日互相收斂
-    let changed=false;
-    for(const date of seq){
-      const ds=newSched[date]; if(!ds||!ds.roles) continue;
-      const pd=addDays(date,-1), nd=addDays(date,1);
-      for(const sh of SHIFTS){
-        const arr=ds[sh]||[], roles=ds.roles[sh]||[];
-        const mv=[];
-        for(let i=0;i<arr.length;i++) if(arr[i]&&!isWorkLocked(date,sh,i)) mv.push(i);
-        if(mv.length<2) continue;
-        for(let pass=0;pass<6;pass++){
-          let improved=false;
-          // ① 兩人互換位置
-          for(let a=0;a<mv.length;a++) for(let b=a+1;b<mv.length;b++){
-            const i=mv[a], j=mv[b], ri=roles[i], rj=roles[j];
-            if(ri===rj) continue;                    // 同位置(例如兩格留觀)互換沒有意義
-            const ni=arr[i], nj=arr[j];
-            if(!canTake(ni,date,rj)||!canTake(nj,date,ri)) continue;
-            const cur=_roleFit(ni,ri,ri,pd,nd,idx,cnt,docMap)+_roleFit(nj,rj,rj,pd,nd,idx,cnt,docMap);
-            const alt=_roleFit(ni,rj,ri,pd,nd,idx,cnt,docMap)+_roleFit(nj,ri,rj,pd,nd,idx,cnt,docMap);
-            if(alt>cur+1e-9){ swap(date,arr,roles,i,j); improved=true; changed=true; }
-          }
-          // ② 三人輪換：兩兩互換常會卡在「換誰都不划算、三個一起轉才划算」的局面
-          for(let a=0;a<mv.length;a++) for(let b=a+1;b<mv.length;b++) for(let c=b+1;c<mv.length;c++){
-            const i=mv[a], j=mv[b], k=mv[c], ri=roles[i], rj=roles[j], rk=roles[k];
-            if(ri===rj||rj===rk||ri===rk) continue;  // 有重複位置時等同兩人互換，①已處理
-            const ni=arr[i], nj=arr[j], nk=arr[k];
-            const cur=_roleFit(ni,ri,ri,pd,nd,idx,cnt,docMap)+_roleFit(nj,rj,rj,pd,nd,idx,cnt,docMap)+_roleFit(nk,rk,rk,pd,nd,idx,cnt,docMap);
-            // A：ni→rj、nj→rk、nk→ri
-            let bestAlt=-Infinity, bestDir=0;
-            if(canTake(ni,date,rj)&&canTake(nj,date,rk)&&canTake(nk,date,ri)){
-              const v=_roleFit(ni,rj,ri,pd,nd,idx,cnt,docMap)+_roleFit(nj,rk,rj,pd,nd,idx,cnt,docMap)+_roleFit(nk,ri,rk,pd,nd,idx,cnt,docMap);
-              if(v>bestAlt){bestAlt=v;bestDir=1;}
-            }
-            // B：ni→rk、nk→rj、nj→ri
-            if(canTake(ni,date,rk)&&canTake(nk,date,rj)&&canTake(nj,date,ri)){
-              const v=_roleFit(ni,rk,ri,pd,nd,idx,cnt,docMap)+_roleFit(nk,rj,rk,pd,nd,idx,cnt,docMap)+_roleFit(nj,ri,rj,pd,nd,idx,cnt,docMap);
-              if(v>bestAlt){bestAlt=v;bestDir=2;}
-            }
-            if(bestDir&&bestAlt>cur+1e-9){
-              // 輪換＝兩次互換：A 為 swap(i,j)+swap(i,k)；B 為 swap(i,j)+swap(j,k)
-              if(bestDir===1){ swap(date,arr,roles,i,j); swap(date,arr,roles,i,k); }
-              else { swap(date,arr,roles,i,j); swap(date,arr,roles,j,k); }
-              improved=true; changed=true;
-            }
-          }
-          if(!improved) break;
-        }
-      }
-    }
-    if(!changed) break;
-  }
-}
-// 位置跳動次數：同一個人相鄰兩個「有上班的日子」位置不同的次數（可跨休假），越少越連貫。
-function countRoleJumps(sched,y,m){
-  let jumps=0;
-  for(const doc of state.doctors){
-    if(doc.type!=='full') continue;
-    let prev=null;
-    for(const dt of monthDates(y,m)){
-      const r=roleOfNurseInSched(doc.id,dt,sched);
-      if(!r) continue;
-      if(prev&&prev!==r) jumps++;
-      prev=r;
-    }
-  }
-  return jumps;
+  return miss;
 }
 function generateScheduleAttempt(y,m,dates){
   const newSched={};
@@ -4321,9 +4296,9 @@ function generateScheduleAttempt(y,m,dates){
   // 鐵則保底：確認每筆預上班都在班(理論上鎖定機制已保證，此為最後防線)。
   enforceWorkPreRequests(newSched, dates);
 
-  // 位置連貫：最後一步，在不動任何人上班日／班別的前提下，整理同一天同班別內部的
-  // 「人↔位置」對應，讓連續上班期間盡量待在同一個位置(不影響任何公平性統計)。
-  smoothRoles(newSched, fullSched, dates);
+  // 位置輪流：最後一步，在不動任何人上班日／班別的前提下，整理同一天同班別內部的
+  // 「人↔位置」對應，讓每個人照 檢→A→B→C 輪流(不影響任何公平性統計)。
+  rotateRoles(newSched, fullSched, dates);
 
   return newSched;
 }
@@ -4473,8 +4448,8 @@ function scheduleQuality(newSched,y,m){
       prefMiss+=wr.filter(x=>x<=2).length;     // 太短的上班段
     }
   }
-  // 位置連貫度(最低優先的加分項)：位置跳動次數，越少代表每個人越固定在同一個位置。
-  const roleJumps=countRoleJumps(newSched,y,m);
+  // 位置輪流(最低優先的加分項)：沒照 檢→A→B→C 順序輪的次數，越少越好。(欄位名沿用 roleJumps)
+  const roleJumps=countRotMiss(newSched,y,m);
   return {empty,nOffD,packShort,allMale:mix.allMale,posMismatch:mix.posMismatch,workPrereqMiss,longLeaveMiss,pairViolations,isolated,threeShiftTypes,transitionExcess,seniorityViolations,maxOffNotSenior,maxShiftNotJunior,seniorityInversions,spread,prefMiss,roleJumps};
 }
 function isQualityBetter(q,best){
@@ -4512,7 +4487,7 @@ function isQualityBetter(q,best){
   if(q.spread!==best.spread) return q.spread<best.spread;
   // 再比個人偏好貼近度(所有鐵則與公平性同分時的加分題)
   if((q.prefMiss||0)!==(best.prefMiss||0)) return (q.prefMiss||0)<(best.prefMiss||0);
-  // 最後才比位置連貫度：其餘全部同分時，選每個人位置跳動較少的那一份。
+  // 最後才比位置輪流：其餘全部同分時，選沒照順序輪較少的那一份。
   return (q.roleJumps||0)<(best.roleJumps||0);
 }
 // 楊梅：護理長(管理職)是行政職，平日(非週末、非國定假日)自動掛行政班 H，週末／國定假日休。
@@ -6966,7 +6941,7 @@ function migrateDoctorPrefs(doctors){
 // ===== 位置制轉換(2026-11-04) =====
 // 舊資料的 D/E/N 格子叫「資深」「一般」。還沒「✅ 完成本月」的月份(包括之後的月份)把格子換成目前的
 // 位置設定(A/B/C/檢、N：A/BC、假日N：A/B/C)：誰上哪一天哪一班完全不動，只決定誰站哪個位置
-// (先放進他有勾的位置，再整班最大配對，最後整月做「位置連貫」讓同一個人連續幾天站同一位置)。
+// (先放進他有勾的位置，再整班最大配對，最後整月做「位置輪流」讓每個人照 檢→A→B→C 輪)。
 // 已完成的月份(8～10月正式班表等)原樣保留，畫面上這些格子不標位置。
 function convertLegacyDayRoles(dateStr){
   const ds=state.schedule[dateStr]; if(!ds||!ds.roles) return false;
@@ -7004,7 +6979,7 @@ function convertLegacyRoles(dateList){
     if(_completedMonths.has(monthKey(y,m))) continue;
     if(convertLegacyDayRoles(d)){ const k=monthKey(y,m); if(!months.has(k)) months.set(k,{y,m}); }
   }
-  // 轉換過的月份整月做一次「位置連貫」(只在同一天同一班內部換位置；預班/位置鎖定的格子不動)
+  // 轉換過的月份整月做一次「位置輪流」(只在同一天同一班內部換位置；位置鎖定的人不動)
   for(const {y,m} of months.values()){
     const dates=monthDates(y,m).filter(d=>state.schedule[d]&&!isDayLocked(d));
     if(!dates.length) continue;
@@ -7014,7 +6989,7 @@ function convertLegacyRoles(dateList){
         const ds=state.schedule[d];
         for(const l of (state.posLocks||[])){ if(l.date!==d||!SHIFTS.includes(l.shift)) continue; const i=(ds[l.shift]||[]).indexOf(l.nurseId); if(i>=0) _workLocks.add(cellKey(d,l.shift,i)); }
       }
-      smoothRoles(state.schedule,state.schedule,dates,8);
+      rotateRoles(state.schedule,state.schedule,dates);
     }finally{ _workLocks=saved; }
   }
   return months.size>0;
